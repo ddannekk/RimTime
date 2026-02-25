@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useCart } from "@/contexts/CartContext";
 import { trpc } from "@/lib/trpc";
+import { saveLocalOrder, trackFunnelEvent } from "@/lib/localAnalytics";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Star } from "lucide-react";
 
@@ -27,9 +28,42 @@ export default function Checkout() {
     customerEmail: "",
     customerAddress: "",
   });
+  const checkoutStartedRef = useRef(false);
+  const orderCompletedRef = useRef(false);
+  const latestItemsCountRef = useRef(0);
 
   const createOrderMutation = trpc.orders.create.useMutation();
   const { data: productsData } = trpc.products.getAll.useQuery();
+
+  useEffect(() => {
+    latestItemsCountRef.current = items.reduce((sum, item) => sum + item.quantity, 0);
+  }, [items]);
+
+  useEffect(() => {
+    if (items.length > 0 && !checkoutStartedRef.current) {
+      trackFunnelEvent({
+        type: "checkout_start",
+        payload: {
+          itemsCount: latestItemsCountRef.current,
+          cartValue: getTotalPrice(),
+        },
+      });
+      checkoutStartedRef.current = true;
+    }
+  }, [items.length, getTotalPrice]);
+
+  useEffect(() => {
+    return () => {
+      if (checkoutStartedRef.current && !orderCompletedRef.current) {
+        trackFunnelEvent({
+          type: "checkout_abandon",
+          payload: {
+            itemsCount: latestItemsCountRef.current,
+          },
+        });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (productsData) {
@@ -52,8 +86,22 @@ export default function Checkout() {
   const handlePromoCode = () => {
     if (promoCode === "SCHOOL20") {
       setDiscount(20);
+      trackFunnelEvent({
+        type: "promo_applied",
+        payload: {
+          code: "SCHOOL20",
+          discountPercent: 20,
+        },
+      });
     } else if (promoCode === "RIMTIME10") {
       setDiscount(10);
+      trackFunnelEvent({
+        type: "promo_applied",
+        payload: {
+          code: "RIMTIME10",
+          discountPercent: 10,
+        },
+      });
     } else {
       setDiscount(0);
       alert("Ungültiger Promo-Code!");
@@ -94,6 +142,28 @@ export default function Checkout() {
       });
 
       if (result.success) {
+        const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+        saveLocalOrder({
+          orderNumber: result.orderNumber,
+          totalPrice: total,
+          createdAt: new Date().toISOString(),
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail,
+          customerAddress: formData.customerAddress,
+          itemsCount,
+          promoCode: discount > 0 ? promoCode : undefined,
+          discountPercent: discount > 0 ? discount : undefined,
+          source: "checkout",
+        });
+        trackFunnelEvent({
+          type: "order_success",
+          payload: {
+            orderNumber: result.orderNumber,
+            totalPrice: total,
+            itemsCount,
+          },
+        });
+        orderCompletedRef.current = true;
         clearCart();
         navigate(`/order-confirmation/${result.orderNumber}`);
         toast.success("Bestellung erfolgreich aufgegeben!");

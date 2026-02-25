@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { Star, ThumbsUp, ThumbsDown, ShoppingCart, Heart, Share2, TrendingUp } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 
 interface Product {
@@ -62,9 +63,9 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [viewCount, setViewCount] = useState(0);
   const { addItem } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const upvoteMutation = trpc.products.upvote.useMutation();
   const downvoteMutation = trpc.products.downvote.useMutation();
 
@@ -137,8 +138,22 @@ export default function ProductDetail() {
   };
 
   const handleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt');
+    if (!product) return;
+
+    const favorite = isInWishlist(product.id);
+    if (favorite) {
+      removeFromWishlist(product.id);
+      toast.success('Aus Favoriten entfernt');
+      return;
+    }
+
+    addToWishlist({
+      productId: product.id,
+      name: product.name,
+      price: product.basePrice,
+      image: product.image,
+    });
+    toast.success('Zu Favoriten hinzugefügt');
   };
 
   const handleShare = () => {
@@ -174,6 +189,7 @@ export default function ProductDetail() {
   const rating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "5.0";
+  const isFavorite = isInWishlist(product.id);
 
   return (
     <div className="w-full">

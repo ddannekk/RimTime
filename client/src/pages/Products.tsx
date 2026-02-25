@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { Star, Filter, Search } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 interface Product {
   id: number;
   name: string;
+  description?: string | null;
   basePrice: number;
   image: string;
   size: string;
@@ -23,7 +24,11 @@ export default function Products() {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<"popular" | "price-low" | "price-high">("popular");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
+  const search = useSearch();
 
   const { data: productsData } = trpc.products.getAll.useQuery();
 
@@ -34,14 +39,31 @@ export default function Products() {
     }
   }, [productsData]);
 
+  const updateSearchInUrl = (nextValue: string) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(search);
+    const normalized = nextValue.trim();
+
+    if (normalized) {
+      params.set("q", normalized);
+    } else {
+      params.delete("q");
+    }
+
+    const nextUrl = params.toString() ? `/products?${params.toString()}` : "/products";
+    window.history.replaceState(window.history.state, "", nextUrl);
+  };
+
   useEffect(() => {
     let filtered = [...products];
 
     // Apply search filter
-    if (searchQuery) {
+    if (searchQuery.trim()) {
+      const normalizedQuery = searchQuery.trim().toLowerCase();
       filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.style.toLowerCase().includes(searchQuery.toLowerCase())
+        p.name.toLowerCase().includes(normalizedQuery) ||
+        p.style.toLowerCase().includes(normalizedQuery) ||
+        (p.description ?? "").toLowerCase().includes(normalizedQuery)
       );
     }
 
@@ -66,7 +88,7 @@ export default function Products() {
     }
 
     setFilteredProducts(filtered);
-  }, [products, selectedSize, selectedStyle, sortBy, searchQuery]);
+  }, [products, selectedSize, selectedStyle, selectedRating, sortBy, searchQuery]);
 
   const sizes = ["30cm", "45cm"];
   const styles = ["Motorsport", "Classic", "Black/Chrome"];
@@ -90,7 +112,11 @@ export default function Products() {
               type="text"
               placeholder="Nach Produkten suchen..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setSearchQuery(nextValue);
+                updateSearchInUrl(nextValue);
+              }}
               className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
@@ -172,6 +198,7 @@ export default function Products() {
                     setSelectedStyle(null);
                     setSelectedRating(null);
                     setSearchQuery("");
+                    updateSearchInUrl("");
                   }}
                   className="w-full py-2 px-3 text-sm font-medium text-accent border border-accent rounded hover:bg-accent/10 transition-colors"
                 >

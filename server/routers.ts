@@ -1,5 +1,7 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, NOT_ADMIN_ERR_MSG } from "@shared/const";
+import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -112,11 +114,16 @@ export const appRouter = router({
       }),
 
     getAll: publicProcedure.query(async ({ ctx }) => {
-      // Only admins can see all orders
-      if (ctx.user?.role !== 'admin') {
-        throw new Error('Unauthorized');
+      if (ctx.user?.role === "admin") {
+        return getAllOrders();
       }
-      return getAllOrders();
+
+      // Local demo mode allows dashboard usage without full OAuth role setup.
+      if (ENV.localDemoMode && !ENV.isProduction) {
+        return getAllOrders();
+      }
+
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }),
   }),
 

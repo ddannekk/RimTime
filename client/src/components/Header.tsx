@@ -1,43 +1,27 @@
 import { Link } from "wouter";
-import { ShoppingCart, Menu, X, Moon, Sun } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { ShoppingCart, Menu, X, Moon, Sun, Heart, Search } from "lucide-react";
+import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { toast } from "sonner";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 interface HeaderProps {
   cartCount: number;
 }
 
-const notifications = [
-  "🛒 Max hat gerade RIMtime Motorsport gekauft",
-  "❤️ Sarah hat dieses Produkt zu Favoriten hinzugefügt",
-  "⭐ Thomas hat eine 5-Stern Bewertung hinterlassen",
-  "🛍️ Lisa hat 2x RIMtime Classic bestellt",
-  "👀 David schaut sich gerade die Produkte an",
-  "💬 Anna hat einen Kommentar hinterlassen",
-  "🎉 Michael hat einen Gutschein gewonnen",
-  "🔥 Julia hat ein Produkt in den Warenkorb gelegt",
-];
-
 export default function Header({ cartCount }: HeaderProps) {
+  const [, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState("");
   const { theme, toggleTheme } = useTheme();
+  const { items: wishlistItems } = useWishlist();
 
-  // Simulate live notifications (only on first load, rarely)
-  useEffect(() => {
-    // Show only 1-2 notifications on page load
-    const showInitialNotifications = () => {
-      setTimeout(() => {
-        const randomNotification = notifications[Math.floor(Math.random() * notifications.length)];
-        toast.info(randomNotification, {
-          duration: 4000,
-          position: "top-right",
-        });
-      }, 3000);
-    };
-
-    showInitialNotifications();
-  }, []);
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = headerSearch.trim();
+    navigate(trimmed ? `/products?q=${encodeURIComponent(trimmed)}` : "/products");
+    setMobileMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -76,8 +60,30 @@ export default function Header({ cartCount }: HeaderProps) {
           </Link>
         </nav>
 
-        {/* Cart, Theme Toggle & Mobile Menu */}
+        {/* Global Search (Desktop) */}
+        <form onSubmit={submitSearch} className="hidden lg:block flex-1 max-w-sm mx-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={headerSearch}
+              onChange={(event) => setHeaderSearch(event.target.value)}
+              placeholder="Produkte suchen..."
+              className="w-full h-10 rounded-md border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+          </div>
+        </form>
+
+        {/* Action Buttons */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(headerSearch.trim() ? `/products?q=${encodeURIComponent(headerSearch.trim())}` : "/products")}
+            className="lg:hidden p-2 text-foreground hover:text-accent transition-colors"
+            title="Suche"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
           {toggleTheme && (
             <button
               onClick={toggleTheme}
@@ -87,6 +93,17 @@ export default function Header({ cartCount }: HeaderProps) {
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
           )}
+
+          <Link href="/wishlist">
+            <div className="relative p-2 text-foreground hover:text-accent transition-colors cursor-pointer">
+              <Heart className="w-5 h-5" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute top-0 right-0 bg-accent text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </div>
+          </Link>
 
           <Link href="/cart">
             <div className="relative p-2 text-foreground hover:text-accent transition-colors cursor-pointer">
@@ -125,6 +142,16 @@ export default function Header({ cartCount }: HeaderProps) {
           <Link href="/faq">
             <div className="text-sm font-medium text-foreground hover:text-accent transition-colors py-2 cursor-pointer">
               FAQ
+            </div>
+          </Link>
+          <Link href="/contact">
+            <div className="text-sm font-medium text-foreground hover:text-accent transition-colors py-2 cursor-pointer">
+              Kontakt
+            </div>
+          </Link>
+          <Link href="/wishlist">
+            <div className="text-sm font-medium text-foreground hover:text-accent transition-colors py-2 cursor-pointer">
+              Wishlist
             </div>
           </Link>
         </nav>
