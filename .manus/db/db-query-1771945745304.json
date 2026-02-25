@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM products; DELETE FROM reviews;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ahET5FgqUssrqi.root --database E6jrurVzQLGpVhUUHAEk5v --execute DELETE FROM products; DELETE FROM reviews;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 530
+}

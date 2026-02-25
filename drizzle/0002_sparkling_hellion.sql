@@ -1,0 +1,1 @@
+ALTER TABLE `products` MODIFY COLUMN `image` varchar(2048) NOT NULL;
