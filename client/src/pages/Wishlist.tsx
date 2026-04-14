@@ -1,14 +1,23 @@
+import { MouseEvent } from "react";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { Trash2, ShoppingCart, ArrowLeft, Heart } from "lucide-react";
+import { ArrowLeft, Heart, ShoppingCart, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { triggerAddToCartVisual, triggerOpenCartPanel } from "@/lib/cartEffects";
+
+interface WishlistItem {
+  productId: number;
+  name: string;
+  price: number;
+  image: string;
+}
 
 export default function Wishlist() {
   const { items, removeFromWishlist, clearWishlist } = useWishlist();
   const { addItem } = useCart();
 
-  const handleAddToCart = (item: any) => {
+  const handleAddToCart = (event: MouseEvent<HTMLButtonElement>, item: WishlistItem) => {
     addItem({
       productId: item.productId,
       quantity: 1,
@@ -17,56 +26,91 @@ export default function Wishlist() {
       size: "30cm",
       style: "Motorsport",
     });
-    toast.success("Zu Warenkorb hinzugefügt!");
+    triggerAddToCartVisual({ sourceElement: event.currentTarget, image: item.image });
+    triggerOpenCartPanel();
+    toast.success("Zum Warenkorb hinzugefügt!");
   };
 
   if (items.length === 0) {
     return (
-      <div className="container py-12 text-center">
-        <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-        <h1 className="text-3xl font-bold text-foreground mb-2">Wishlist ist leer</h1>
-        <p className="text-muted-foreground mb-6">Fügen Sie Produkte hinzu, um sie später zu kaufen</p>
-        <Link href="/products" className="inline-flex items-center justify-center bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors">
-          Zu Produkten
-        </Link>
+      <div className="container py-16 text-center">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-border/70 bg-card/85 px-8 py-14 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="mx-auto mb-5 flex h-18 w-18 items-center justify-center rounded-full bg-accent/12 text-accent">
+            <Heart className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground">Wishlist ist leer</h1>
+          <p className="mx-auto mt-3 max-w-lg text-muted-foreground">Markiere Produkte, die du später vergleichen oder in einem zweiten Schritt kaufen willst. Sie bleiben hier gesammelt, bis du bereit bist.</p>
+          <Link href="/products" className="mt-8 inline-flex items-center justify-center rounded-2xl bg-accent px-6 py-3 font-semibold text-accent-foreground transition-colors hover:bg-accent/90">
+            Zu Produkten
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container py-12">
-      <div className="mb-8">
-        <Link href="/products" className="flex items-center gap-2 text-accent hover:opacity-80 transition-opacity mb-4">
-          <ArrowLeft className="w-5 h-5" />
+      <div className="mb-8 rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.78),rgba(255,255,255,0.38))] p-8 shadow-sm dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_26%),linear-gradient(180deg,rgba(2,6,23,0.74),rgba(15,23,42,0.32))]">
+        <Link href="/products" className="mb-4 flex items-center gap-2 text-accent transition-opacity hover:opacity-80">
+          <ArrowLeft className="h-5 w-5" />
           Zurück zu Produkten
         </Link>
-        <h1 className="text-4xl font-bold text-foreground">Meine Wishlist</h1>
-        <p className="text-muted-foreground mt-2">{items.length} Produkte</p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-accent">Saved picks</p>
+            <h1 className="text-4xl font-bold text-foreground">Meine Wishlist</h1>
+            <p className="mt-2 text-muted-foreground">{items.length} Produkt{items.length !== 1 ? "e" : ""} gespeichert für später.</p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-background/70 px-4 py-2 text-sm font-semibold text-accent shadow-sm backdrop-blur">
+            <Sparkles className="h-4 w-4" />
+            Bereit für den nächsten Kaufmoment
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          <div key={item.productId} className="card overflow-hidden hover:shadow-lg transition-shadow">
-            <img src={item.image} alt={item.name} className="w-full h-48 object-cover" />
-            <div className="p-4">
-              <h3 className="font-semibold text-foreground mb-2">{item.name}</h3>
-              <p className="text-2xl font-bold text-accent mb-4">€{(item.price / 100).toFixed(2)}</p>
+          <div key={item.productId} className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/88 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-shadow hover:shadow-[0_24px_55px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="relative overflow-hidden p-4 pb-0">
+              <div className="absolute right-7 top-7 z-10 rounded-full border border-white/40 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-md">
+                Saved
+              </div>
+              <div className="relative overflow-hidden rounded-[1.35rem] bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(15,23,42,0.06))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.06),rgba(15,23,42,0.45))]">
+                <div className="absolute inset-x-10 bottom-3 h-8 rounded-full bg-black/15 blur-xl dark:bg-accent/10" />
+                <img src={item.image} alt={item.name} className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.32),transparent_45%),linear-gradient(to_top,rgba(15,23,42,0.25),transparent_40%)] opacity-80" />
+              </div>
+            </div>
+
+            <div className="space-y-4 p-5 pt-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-accent/80">Wishlist</p>
+                  <h3 className="text-xl font-semibold text-foreground">{item.name}</h3>
+                </div>
+                <div className="rounded-full bg-accent/10 px-2.5 py-1 text-sm font-semibold text-accent">€{(item.price / 100).toFixed(2)}</div>
+              </div>
+
+              <p className="text-sm leading-6 text-muted-foreground">Behalte dieses Modell griffbereit und schiebe es mit einem Klick zurück in deinen Kauf-Flow.</p>
+
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleAddToCart(item)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-accent text-accent-foreground px-3 py-2 rounded font-semibold hover:bg-accent/90 transition-colors"
+                  onClick={(event) => handleAddToCart(event, item)}
+                  className="flex-1 rounded-2xl bg-accent px-4 py-3 font-semibold text-accent-foreground shadow-[0_16px_28px_rgba(234,88,12,0.22)] transition-colors hover:bg-accent/90"
                 >
-                  <ShoppingCart className="w-4 h-4" />
-                  In Warenkorb
+                  <span className="flex items-center justify-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    In Warenkorb
+                  </span>
                 </button>
                 <button
                   onClick={() => {
                     removeFromWishlist(item.productId);
                     toast.success("Aus Wishlist entfernt");
                   }}
-                  className="px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                  className="rounded-2xl border border-red-200/80 px-4 py-3 text-red-600 transition-colors hover:bg-red-50 dark:border-red-500/20 dark:hover:bg-red-500/10"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -74,19 +118,25 @@ export default function Wishlist() {
         ))}
       </div>
 
-      <div className="flex gap-4">
-        <Link href="/checkout" className="flex-1 bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors text-center">
-          Zur Kasse
-        </Link>
-        <button
-          onClick={() => {
-            clearWishlist();
-            toast.success("Wishlist geleert");
-          }}
-          className="px-6 py-3 border border-border rounded-lg font-semibold hover:bg-muted transition-colors"
-        >
-          Wishlist leeren
-        </button>
+      <div className="flex flex-col gap-4 rounded-[1.75rem] border border-border/70 bg-card/88 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.03] md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-lg font-semibold text-foreground">Bereit zum Checkout?</p>
+          <p className="mt-1 text-sm text-muted-foreground">Überführe deine gespeicherten Favoriten in den Kaufprozess oder bereinige die Liste.</p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/checkout" className="inline-flex items-center justify-center rounded-2xl bg-accent px-6 py-3 text-center font-semibold text-accent-foreground transition-colors hover:bg-accent/90">
+            Zur Kasse
+          </Link>
+          <button
+            onClick={() => {
+              clearWishlist();
+              toast.success("Wishlist geleert");
+            }}
+            className="rounded-2xl border border-border px-6 py-3 font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            Wishlist leeren
+          </button>
+        </div>
       </div>
     </div>
   );

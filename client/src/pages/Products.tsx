@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link, useSearch } from "wouter";
-import { Star, Filter, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearch } from "wouter";
+import { Filter, Search } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import ProductCard from "@/components/ProductCard";
 
 interface Product {
   id: number;
@@ -57,28 +58,26 @@ export default function Products() {
   useEffect(() => {
     let filtered = [...products];
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const normalizedQuery = searchQuery.trim().toLowerCase();
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(normalizedQuery) ||
-        p.style.toLowerCase().includes(normalizedQuery) ||
-        (p.description ?? "").toLowerCase().includes(normalizedQuery)
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(normalizedQuery) ||
+          product.style.toLowerCase().includes(normalizedQuery) ||
+          (product.description ?? "").toLowerCase().includes(normalizedQuery)
       );
     }
 
-    // Apply filters
     if (selectedSize) {
-      filtered = filtered.filter((p) => p.size === selectedSize);
+      filtered = filtered.filter((product) => product.size === selectedSize);
     }
     if (selectedStyle) {
-      filtered = filtered.filter((p) => p.style === selectedStyle);
+      filtered = filtered.filter((product) => product.style === selectedStyle);
     }
     if (selectedRating) {
-      filtered = filtered.filter((p) => p.upvotes >= selectedRating);
+      filtered = filtered.filter((product) => product.upvotes >= selectedRating);
     }
 
-    // Apply sorting
     if (sortBy === "popular") {
       filtered.sort((a, b) => b.upvotes - a.upvotes);
     } else if (sortBy === "price-low") {
@@ -96,56 +95,51 @@ export default function Products() {
   return (
     <div className="w-full">
       <div className="container py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Produkte</h1>
-          <p className="text-muted-foreground">
-            Entdecke unsere Kollektion von hochwertigen Felgenuhren
-          </p>
+        <div className="mb-8 rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.38))] p-8 shadow-sm dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_28%),linear-gradient(180deg,rgba(2,6,23,0.74),rgba(15,23,42,0.35))]">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent">Motorsport clocks</p>
+          <h1 className="mb-2 text-4xl font-bold text-foreground">Produkte</h1>
+          <p className="text-muted-foreground">Entdecke unsere Kollektion von hochwertigen Felgenuhren.</p>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-8">
           <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Nach Produkten suchen..."
               value={searchQuery}
-              onChange={(e) => {
-                const nextValue = e.target.value;
+              onChange={(event) => {
+                const nextValue = event.target.value;
                 setSearchQuery(nextValue);
                 updateSearchInUrl(nextValue);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full rounded-lg border border-border bg-background py-3 pl-10 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
           {searchQuery && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {filteredProducts.length} Produkt{filteredProducts.length !== 1 ? 'e' : ''} gefunden
+            <p className="mt-2 text-sm text-muted-foreground">
+              {filteredProducts.length} Produkt{filteredProducts.length !== 1 ? "e" : ""} gefunden
             </p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Filters */}
-          <div className={`lg:block ${mobileFiltersOpen ? "block" : "hidden"}`}>
-            <div className="card sticky top-24">
-              <h2 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
-                <Filter className="w-5 h-5" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          <div className={`${mobileFiltersOpen ? "block" : "hidden"} lg:block`}>
+            <div className="sticky top-24 rounded-[1.75rem] border border-border/70 bg-card/88 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
+              <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-foreground">
+                <Filter className="h-5 w-5" />
                 Filter
               </h2>
 
-              {/* Size Filter */}
               <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-3">Größe</h3>
+                <h3 className="mb-3 font-semibold text-foreground">Größe</h3>
                 <div className="space-y-2">
                   {sizes.map((size) => (
-                    <label key={size} className="flex items-center gap-2 cursor-pointer">
+                    <label key={size} className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
                         checked={selectedSize === size}
-                        onChange={(e) => setSelectedSize(e.target.checked ? size : null)}
+                        onChange={(event) => setSelectedSize(event.target.checked ? size : null)}
                         className="rounded border-border"
                       />
                       <span className="text-sm text-foreground">{size}</span>
@@ -154,16 +148,15 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* Style Filter */}
               <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-3">Style</h3>
+                <h3 className="mb-3 font-semibold text-foreground">Style</h3>
                 <div className="space-y-2">
                   {styles.map((style) => (
-                    <label key={style} className="flex items-center gap-2 cursor-pointer">
+                    <label key={style} className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
                         checked={selectedStyle === style}
-                        onChange={(e) => setSelectedStyle(e.target.checked ? style : null)}
+                        onChange={(event) => setSelectedStyle(event.target.checked ? style : null)}
                         className="rounded border-border"
                       />
                       <span className="text-sm text-foreground">{style}</span>
@@ -172,16 +165,15 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* Rating Filter */}
               <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-3">Bewertung</h3>
+                <h3 className="mb-3 font-semibold text-foreground">Bewertung</h3>
                 <div className="space-y-2">
                   {[5, 4, 3].map((rating) => (
-                    <label key={rating} className="flex items-center gap-2 cursor-pointer">
+                    <label key={rating} className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
                         checked={selectedRating === rating}
-                        onChange={(e) => setSelectedRating(e.target.checked ? rating : null)}
+                        onChange={(event) => setSelectedRating(event.target.checked ? rating : null)}
                         className="rounded border-border"
                       />
                       <span className="text-sm text-foreground">{rating}+ Sterne</span>
@@ -190,7 +182,6 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* Clear Filters */}
               {(selectedSize || selectedStyle || selectedRating || searchQuery) && (
                 <button
                   onClick={() => {
@@ -200,7 +191,7 @@ export default function Products() {
                     setSearchQuery("");
                     updateSearchInUrl("");
                   }}
-                  className="w-full py-2 px-3 text-sm font-medium text-accent border border-accent rounded hover:bg-accent/10 transition-colors"
+                  className="w-full rounded-xl border border-accent px-3 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
                 >
                   Filter löschen
                 </button>
@@ -208,27 +199,22 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Products Grid */}
           <div className="lg:col-span-3">
-            {/* Sort & Mobile Filter Toggle */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div className="flex gap-2">
                 <button
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                  className="lg:hidden flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted transition-colors"
+                  className="flex items-center gap-2 rounded border border-border px-3 py-2 transition-colors hover:bg-muted lg:hidden"
                 >
-                  <Filter className="w-4 h-4" />
+                  <Filter className="h-4 w-4" />
                   Filter
                 </button>
-                <Link href="/compare" className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted transition-colors text-foreground">
-                  Vergleichen
-                </Link>
               </div>
 
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 border border-border rounded bg-background text-foreground"
+                onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+                className="rounded border border-border bg-background px-3 py-2 text-foreground"
               >
                 <option value="popular">Beliebtheit</option>
                 <option value="price-low">Preis: Niedrig zu Hoch</option>
@@ -236,51 +222,26 @@ export default function Products() {
               </select>
             </div>
 
-            {/* Products */}
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="card animate-pulse">
-                    <div className="w-full h-48 bg-muted rounded mb-4" />
-                    <div className="h-4 bg-muted rounded mb-2" />
-                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="mb-4 h-48 w-full rounded bg-muted" />
+                    <div className="mb-2 h-4 rounded bg-muted" />
+                    <div className="h-4 w-3/4 rounded bg-muted" />
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredProducts.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`}>
-                    <div className="card hover:shadow-lg hover:border-accent transition-all cursor-pointer group">
-                      <div className="w-full h-48 bg-muted rounded mb-4 overflow-hidden">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                      <h3 className="font-semibold text-foreground mb-1 group-hover:text-accent transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {product.size} • {product.style}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-accent">
-                          €{(product.basePrice / 100).toFixed(2)}
-                        </span>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Star className="w-4 h-4 fill-accent text-accent" />
-                          <span>{product.upvotes}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} compact />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Keine Produkte mit diesen Filtern gefunden</p>
+              <div className="rounded-[1.75rem] border border-border/70 bg-card/85 px-6 py-16 text-center shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+                <p className="text-lg font-semibold text-foreground">Keine passenden Produkte gefunden</p>
+                <p className="mt-2 text-muted-foreground">Versuche einen anderen Suchbegriff oder lösche die aktiven Filter.</p>
               </div>
             )}
           </div>

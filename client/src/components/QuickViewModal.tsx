@@ -3,6 +3,7 @@ import { X, ShoppingCart, Heart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
+import { triggerOpenCartPanel } from "@/lib/cartEffects";
 
 interface Product {
   id: number;
@@ -37,6 +38,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
       size: product.size,
       style: product.style,
     });
+    triggerOpenCartPanel();
     toast.success("Zu Warenkorb hinzugefügt!");
     onClose();
   };
