@@ -65,7 +65,7 @@ describe("Cart Context", () => {
     let items: any[] = [];
 
     const addItem = (newItem: any) => {
-      const existingItem = items.find((item) => item.productId === newItem.productId);
+      const existingItem = items.find((item) => item.cartKey === newItem.cartKey);
       if (existingItem) {
         existingItem.quantity += newItem.quantity;
       } else {
@@ -73,42 +73,42 @@ describe("Cart Context", () => {
       }
     };
 
-    addItem({ productId: 1, quantity: 1, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" });
+    addItem({ cartKey: "1::30cm::Motorsport::", productId: 1, quantity: 1, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" });
     expect(items).toHaveLength(1);
 
-    addItem({ productId: 1, quantity: 1, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" });
+    addItem({ cartKey: "1::30cm::Motorsport::", productId: 1, quantity: 1, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" });
     expect(items).toHaveLength(1);
     expect(items[0].quantity).toBe(2);
   });
 
   it("should handle removing items", () => {
     let items = [
-      { productId: 1, quantity: 2, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" },
-      { productId: 2, quantity: 1, price: 5990, name: "Product 2", size: "45cm", style: "Classic" },
+      { cartKey: "1::30cm::Motorsport::", productId: 1, quantity: 2, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" },
+      { cartKey: "2::45cm::Classic::", productId: 2, quantity: 1, price: 5990, name: "Product 2", size: "45cm", style: "Classic" },
     ];
 
-    const removeItem = (productId: number) => {
-      items = items.filter((item) => item.productId !== productId);
+    const removeItem = (cartKey: string) => {
+      items = items.filter((item) => item.cartKey !== cartKey);
     };
 
-    removeItem(1);
+    removeItem("1::30cm::Motorsport::");
     expect(items).toHaveLength(1);
     expect(items[0].productId).toBe(2);
   });
 
   it("should handle updating quantity", () => {
     let items = [
-      { productId: 1, quantity: 2, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" },
+      { cartKey: "1::30cm::Motorsport::", productId: 1, quantity: 2, price: 3990, name: "Product 1", size: "30cm", style: "Motorsport" },
     ];
 
-    const updateQuantity = (productId: number, quantity: number) => {
-      const item = items.find((item) => item.productId === productId);
+    const updateQuantity = (cartKey: string, quantity: number) => {
+      const item = items.find((item) => item.cartKey === cartKey);
       if (item) {
         item.quantity = quantity;
       }
     };
 
-    updateQuantity(1, 5);
+    updateQuantity("1::30cm::Motorsport::", 5);
     expect(items[0].quantity).toBe(5);
   });
 });

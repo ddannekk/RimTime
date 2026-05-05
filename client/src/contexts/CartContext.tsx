@@ -1,25 +1,45 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface CartItem {
+  cartKey?: string;
   productId: number;
   quantity: number;
   price: number;
   name: string;
   size: string;
   style: string;
+  image?: string;
+  personalization?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  removeItem: (cartKey: string) => void;
+  updateQuantity: (cartKey: string, quantity: number) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+export function getCartItemKey(item: Pick<CartItem, "productId" | "size" | "style" | "personalization">) {
+  return [
+    item.productId,
+    item.size,
+    item.style,
+    (item.personalization ?? "").trim().toLowerCase(),
+  ].join("::");
+}
+
+function normalizeCartItem(item: CartItem): CartItem {
+  return {
+    ...item,
+    cartKey: item.cartKey ?? getCartItemKey(item),
+    personalization: item.personalization?.trim() || undefined,
+  };
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -29,7 +49,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const savedCart = localStorage.getItem("rimtime_cart");
     if (savedCart) {
       try {
-        setItems(JSON.parse(savedCart));
+        setItems((JSON.parse(savedCart) as CartItem[]).map(normalizeCartItem));
       } catch (error) {
         console.error("Failed to load cart from localStorage:", error);
       }
@@ -42,30 +62,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items]);
 
   const addItem = (newItem: CartItem) => {
+    const normalizedNewItem = normalizeCartItem(newItem);
     setItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.productId === newItem.productId);
+      const existingItem = prevItems.find((item) => item.cartKey === normalizedNewItem.cartKey);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.productId === newItem.productId
-            ? { ...item, quantity: item.quantity + newItem.quantity }
+          item.cartKey === normalizedNewItem.cartKey
+            ? { ...item, quantity: item.quantity + normalizedNewItem.quantity }
             : item
         );
       }
-      return [...prevItems, newItem];
+      return [...prevItems, normalizedNewItem];
     });
   };
 
-  const removeItem = (productId: number) => {
-    setItems((prevItems) => prevItems.filter((item) => item.productId !== productId));
+  const removeItem = (cartKey: string) => {
+    setItems((prevItems) => prevItems.filter((item) => item.cartKey !== cartKey));
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (cartKey: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(cartKey);
     } else {
       setItems((prevItems) =>
         prevItems.map((item) =>
-          item.productId === productId ? { ...item, quantity } : item
+          item.cartKey === cartKey ? { ...item, quantity } : item
         )
       );
     }

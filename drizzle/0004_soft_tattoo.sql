@@ -1,0 +1,1 @@
+ALTER TABLE `orderItems` ADD `personalization` varchar(255);

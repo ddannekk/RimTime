@@ -22,7 +22,6 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<"popular" | "price-low" | "price-high">("popular");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -74,10 +73,6 @@ export default function Products() {
     if (selectedStyle) {
       filtered = filtered.filter((product) => product.style === selectedStyle);
     }
-    if (selectedRating) {
-      filtered = filtered.filter((product) => product.upvotes >= selectedRating);
-    }
-
     if (sortBy === "popular") {
       filtered.sort((a, b) => b.upvotes - a.upvotes);
     } else if (sortBy === "price-low") {
@@ -87,7 +82,7 @@ export default function Products() {
     }
 
     setFilteredProducts(filtered);
-  }, [products, selectedSize, selectedStyle, selectedRating, sortBy, searchQuery]);
+  }, [products, selectedSize, selectedStyle, sortBy, searchQuery]);
 
   const sizes = ["30cm", "45cm"];
   const styles = ["Motorsport", "Classic", "Black/Chrome"];
@@ -96,8 +91,8 @@ export default function Products() {
     <div className="w-full">
       <div className="container py-8">
         <div className="mb-8 rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.38))] p-8 shadow-sm dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_28%),linear-gradient(180deg,rgba(2,6,23,0.74),rgba(15,23,42,0.35))]">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent">Motorsport clocks</p>
-          <h1 className="mb-2 text-4xl font-bold text-foreground">Produkte</h1>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent">Felgenuhren</p>
+          <h1 className="mb-2 text-3xl font-bold text-foreground sm:text-4xl">Produkte</h1>
           <p className="text-muted-foreground">Entdecke unsere Kollektion von hochwertigen Felgenuhren.</p>
         </div>
 
@@ -106,7 +101,7 @@ export default function Products() {
             <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Nach Produkten suchen..."
+              placeholder="Suche nach Modell, Größe oder Finish"
               value={searchQuery}
               onChange={(event) => {
                 const nextValue = event.target.value;
@@ -125,7 +120,7 @@ export default function Products() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <div className={`${mobileFiltersOpen ? "block" : "hidden"} lg:block`}>
-            <div className="sticky top-24 rounded-[1.75rem] border border-border/70 bg-card/88 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="sticky top-24 rounded-[1.75rem] border border-border/70 bg-card/88 p-5 shadow-sm backdrop-blur lg:p-6 dark:border-white/10 dark:bg-white/[0.03]">
               <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Filter className="h-5 w-5" />
                 Filter
@@ -165,29 +160,11 @@ export default function Products() {
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h3 className="mb-3 font-semibold text-foreground">Bewertung</h3>
-                <div className="space-y-2">
-                  {[5, 4, 3].map((rating) => (
-                    <label key={rating} className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedRating === rating}
-                        onChange={(event) => setSelectedRating(event.target.checked ? rating : null)}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm text-foreground">{rating}+ Sterne</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {(selectedSize || selectedStyle || selectedRating || searchQuery) && (
+              {(selectedSize || selectedStyle || searchQuery) && (
                 <button
                   onClick={() => {
                     setSelectedSize(null);
                     setSelectedStyle(null);
-                    setSelectedRating(null);
                     setSearchQuery("");
                     updateSearchInUrl("");
                   }}
@@ -200,7 +177,7 @@ export default function Products() {
           </div>
 
           <div className="lg:col-span-3">
-            <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mb-6 flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
               <div className="flex gap-2">
                 <button
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
@@ -214,7 +191,7 @@ export default function Products() {
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-                className="rounded border border-border bg-background px-3 py-2 text-foreground"
+                className="w-full rounded border border-border bg-background px-3 py-2 text-foreground sm:w-auto"
               >
                 <option value="popular">Beliebtheit</option>
                 <option value="price-low">Preis: Niedrig zu Hoch</option>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { CART_BUMP_EVENT } from "@/lib/cartEffects";
+import { FREE_SHIPPING_THRESHOLD, RETURN_DAYS } from "@/lib/storePolicies";
 
 interface HeaderProps {
   cartCount: number;
@@ -41,6 +42,13 @@ export default function Header({ cartCount }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/90 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur supports-[backdrop-filter]:bg-background/72 dark:border-white/10 dark:shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+      <div className="border-b border-border/70 bg-[#d8cfb8] text-[10px] font-medium tracking-[0.1em] text-slate-800 dark:border-white/10 dark:bg-[#d8cfb8] dark:text-slate-900 sm:text-[11px] sm:tracking-[0.14em]">
+        <div className="container flex min-h-8 items-center justify-center gap-4 py-1 text-center md:justify-between md:gap-6">
+          <div className="hidden md:block">4.8/5 Kundenzufriedenheit</div>
+          <div>Gratis Versand ab €{(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)} &amp; {RETURN_DAYS} Tage Rückgaberecht</div>
+          <div className="hidden md:block">Handgefertigte Felgenuhren</div>
+        </div>
+      </div>
       <div className="container flex items-center justify-between py-4">
         <Link href="/">
           <div className="flex cursor-pointer items-center gap-2 text-xl font-bold text-accent transition-opacity hover:opacity-80">
@@ -51,7 +59,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-6">
           <Link href="/products">
             <div className="cursor-pointer text-sm font-medium text-foreground transition-colors hover:text-accent">Produkte</div>
           </Link>
@@ -66,14 +74,15 @@ export default function Header({ cartCount }: HeaderProps) {
           </Link>
         </nav>
 
-        <form onSubmit={submitSearch} className="mx-6 hidden max-w-sm flex-1 lg:block">
+        <form onSubmit={submitSearch} className="mx-6 hidden max-w-sm flex-1 xl:block">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={headerSearch}
               onChange={(event) => setHeaderSearch(event.target.value)}
-              placeholder="Produkte suchen..."
+              placeholder="Suche nach Modell, Größe oder Stil"
+              aria-label="Suche nach Modell, Größe oder Stil"
               className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
@@ -83,7 +92,8 @@ export default function Header({ cartCount }: HeaderProps) {
           <button
             onClick={() => navigate(headerSearch.trim() ? `/products?q=${encodeURIComponent(headerSearch.trim())}` : "/products")}
             className="p-2 text-foreground transition-colors hover:text-accent lg:hidden"
-            title="Suche"
+            title="Produkte suchen"
+            aria-label="Produkte suchen"
           >
             <Search className="h-5 w-5" />
           </button>
@@ -92,14 +102,15 @@ export default function Header({ cartCount }: HeaderProps) {
             <button
               onClick={toggleTheme}
               className="p-2 text-foreground transition-colors hover:text-accent"
-              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              title={theme === "light" ? "Dunklen Modus aktivieren" : "Hellen Modus aktivieren"}
+              aria-label={theme === "light" ? "Dunklen Modus aktivieren" : "Hellen Modus aktivieren"}
             >
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </button>
           )}
 
           <Link href="/wishlist">
-            <div className="relative cursor-pointer p-2 text-foreground transition-colors hover:text-accent">
+            <div className="relative cursor-pointer p-2 text-foreground transition-colors hover:text-accent" aria-label="Merkliste">
               <Heart className="h-5 w-5" />
               {wishlistItems.length > 0 && (
                 <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold text-white">
@@ -113,6 +124,7 @@ export default function Header({ cartCount }: HeaderProps) {
             <div
               data-cart-icon-target="true"
               className={`relative cursor-pointer rounded-full p-2 text-foreground transition-all hover:text-accent ${cartBumping ? "scale-110 bg-accent/12 text-accent shadow-[0_10px_24px_rgba(234,88,12,0.28)]" : ""}`}
+              aria-label="Warenkorb"
             >
               <ShoppingCart className="h-6 w-6" />
               {cartCount > 0 && (
@@ -124,7 +136,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </Link>
 
           <button
-            className="p-2 text-foreground transition-colors hover:text-accent md:hidden"
+            className="p-2 text-foreground transition-colors hover:text-accent lg:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -133,7 +145,7 @@ export default function Header({ cartCount }: HeaderProps) {
       </div>
 
       {mobileMenuOpen && (
-        <nav className="flex flex-col gap-3 border-t border-border bg-card p-4 md:hidden">
+        <nav className="flex flex-col gap-3 border-t border-border bg-card p-4 lg:hidden">
           <Link href="/products">
             <div className="cursor-pointer py-2 text-sm font-medium text-foreground transition-colors hover:text-accent">Produkte</div>
           </Link>
@@ -147,7 +159,7 @@ export default function Header({ cartCount }: HeaderProps) {
             <div className="cursor-pointer py-2 text-sm font-medium text-foreground transition-colors hover:text-accent">Kontakt</div>
           </Link>
           <Link href="/wishlist">
-            <div className="cursor-pointer py-2 text-sm font-medium text-foreground transition-colors hover:text-accent">Wishlist</div>
+            <div className="cursor-pointer py-2 text-sm font-medium text-foreground transition-colors hover:text-accent">Merkliste</div>
           </Link>
         </nav>
       )}

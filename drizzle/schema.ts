@@ -35,6 +35,7 @@ export const products = mysqlTable("products", {
   size: mysqlEnum("size", ["30cm", "45cm"]).notNull(),
   style: mysqlEnum("style", ["Motorsport", "Classic", "Black/Chrome"]).notNull(),
   personalization: varchar("personalization", { length: 255 }),
+  stock: int("stock").default(10).notNull(),
   upvotes: int("upvotes").default(0).notNull(),
   downvotes: int("downvotes").default(0).notNull(),
   isBestseller: int("isBestseller").default(0).notNull(),
@@ -84,6 +85,7 @@ export const orders = mysqlTable("orders", {
   totalPrice: int("totalPrice").notNull(), // in cents
   status: mysqlEnum("status", ["pending", "confirmed", "shipped", "delivered"]).default("pending").notNull(),
   paymentMethod: varchar("paymentMethod", { length: 50 }).default("vorkasse").notNull(),
+  paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid", "unpaid"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -98,6 +100,7 @@ export const orderItems = mysqlTable("orderItems", {
   productId: int("productId").notNull(),
   quantity: int("quantity").notNull(),
   price: int("price").notNull(), // in cents
+  personalization: varchar("personalization", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -126,7 +129,10 @@ export const promoCodes = mysqlTable("promoCodes", {
   discountPercent: int("discountPercent").notNull(),
   description: text("description"),
   isActive: int("isActive").default(1).notNull(),
+  currentUses: int("currentUses").default(0).notNull(),
+  maxUses: int("maxUses"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   expiresAt: timestamp("expiresAt"),
 });
 

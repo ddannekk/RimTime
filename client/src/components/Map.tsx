@@ -62,13 +62,13 @@
  * );
  *
  * -------------------------------
- * 🌦️ MAP LAYERS (attach directly to map)
+ * MAP LAYERS (attach directly to map)
  * - new google.maps.TrafficLayer().setMap(map);
  * - new google.maps.TransitLayer().setMap(map);
  * - new google.maps.BicyclingLayer().setMap(map);
  *
  * -------------------------------
- * ✅ SUMMARY
+ * SUMMARY
  * - “map-attached” → AdvancedMarkerElement, DirectionsRenderer, Layers.
  * - “standalone” → Geocoder, DirectionsService, DistanceMatrixService, ElevationService.
  * - “data-only” → Place, Geometry utilities.

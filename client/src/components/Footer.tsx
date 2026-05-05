@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { getMerchantAddressLine, merchantProfile } from "@/lib/legal";
 
 export default function Footer() {
   return (
@@ -56,9 +57,9 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Kontakt</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Email: info@rimtime.de</li>
-              <li>Telefon: +49 (0) 123 456789</li>
-              <li>Adresse: RIMtime GmbH</li>
+              <li>E-Mail: {merchantProfile.email}</li>
+              <li>Telefon: {merchantProfile.phone}</li>
+              <li>Adresse: {getMerchantAddressLine()}</li>
             </ul>
           </div>
         </div>

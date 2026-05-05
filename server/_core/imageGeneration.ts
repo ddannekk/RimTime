@@ -10,7 +10,7 @@
  *   const { url: imageUrl } = await generateImage({
  *     prompt: "Add a rainbow to this landscape",
  *     originalImages: [{
- *       url: "https://example.com/original.jpg",
+ *       url: "https://rimtime-shop.de/original.jpg",
  *       mimeType: "image/jpeg"
  *     }]
  *   });

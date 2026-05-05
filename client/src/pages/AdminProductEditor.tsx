@@ -1,4 +1,4 @@
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, useSearch } from "wouter";
 import { ArrowLeft, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -9,8 +9,8 @@ interface Product {
   name: string;
   basePrice: number;
   image: string;
-  size: string;
-  style: string;
+  size: "30cm" | "45cm";
+  style: "Motorsport" | "Classic" | "Black/Chrome";
   description: string;
   stock: number;
 }
@@ -18,8 +18,11 @@ interface Product {
 export default function AdminProductEditor() {
   const [, params] = useRoute("/admin-dashboard/product/:id");
   const [, navigate] = useLocation();
+  const search = useSearch();
   const productId = params?.id;
-  const isEditing = productId && productId !== "new";
+  const isEditing = Boolean(productId && productId !== "new");
+  const tab = new URLSearchParams(search).get("tab") ?? "products";
+  const utils = trpc.useUtils();
 
   const [formData, setFormData] = useState<Product>({
     name: "",
@@ -32,38 +35,58 @@ export default function AdminProductEditor() {
   });
 
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [priceInput, setPriceInput] = useState("");
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Load all products from tRPC
-  const { data: productsData } = trpc.products.getAll.useQuery();
+  const productQuery = trpc.products.getById.useQuery(
+    { id: Number(productId) },
+    { enabled: isEditing && Boolean(productId) }
+  );
+  const createProductMutation = trpc.products.create.useMutation({
+    onSuccess: async () => {
+      await utils.products.getAll.invalidate();
+    },
+  });
+  const updateProductMutation = trpc.products.update.useMutation({
+    onSuccess: async (_, variables) => {
+      await utils.products.getAll.invalidate();
+      await utils.products.getById.invalidate({ id: variables.id });
+    },
+  });
 
   useEffect(() => {
-    if (isEditing && productId && productsData) {
-      // Find the product in the tRPC data
-      const product = (productsData as any[]).find((p: any) => p.id === parseInt(productId));
-      if (product) {
-        setFormData({
-          id: product.id,
-          name: product.name,
-          basePrice: product.basePrice,
-          image: product.image,
-          size: product.size,
-          style: product.style,
-          description: product.description || "",
-          stock: product.stock || 10,
-        });
-        setImagePreview(product.image || "");
-      } else {
-        toast.error("Produkt nicht gefunden!");
-      }
+    if (!isEditing) {
+      setPriceInput("");
+      setImageUrlInput("");
+      return;
     }
-  }, [isEditing, productId, productsData]);
+
+    const product = productQuery.data as any;
+    if (product) {
+      setFormData({
+        id: product.id,
+        name: product.name,
+        basePrice: product.basePrice,
+        image: product.image,
+        size: product.size,
+        style: product.style,
+        description: product.description || "",
+        stock: product.stock || 10,
+      });
+      setImagePreview(product.image || "");
+      setImageUrlInput(product.image || "");
+      setPriceInput((product.basePrice / 100).toFixed(2));
+    } else if (!productQuery.isLoading && isEditing) {
+      toast.error("Produkt nicht gefunden!");
+    }
+  }, [isEditing, productQuery.data, productQuery.isLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === "basePrice" || name === "stock" ? parseInt(value) : value
+      [name]: name === "stock" ? parseInt(value, 10) || 0 : value
     }));
   };
 
@@ -83,50 +106,53 @@ export default function AdminProductEditor() {
   const handleImageUrl = (url: string) => {
     setFormData(prev => ({ ...prev, image: url }));
     setImagePreview(url);
+    setImageUrlInput(url);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedPrice = Math.round(Number.parseFloat(priceInput.replace(",", ".")) * 100);
+
+    if (!formData.name.trim() || !formData.image.trim() || !Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+      toast.error("Bitte fülle Name, Bild und einen gültigen Preis aus.");
+      return;
+    }
+
     setLoading(true);
 
-    setTimeout(() => {
-      try {
-        // Save to localStorage for demo purposes
-        let products = [];
-        const stored = localStorage.getItem("products");
-        if (stored) {
-          products = JSON.parse(stored);
-        }
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        basePrice: normalizedPrice,
+        image: formData.image.trim(),
+        size: formData.size,
+        style: formData.style,
+        stock: formData.stock,
+      } as const;
 
-        if (isEditing && productId) {
-          // Update existing product
-          const index = products.findIndex((p: any) => p.id === parseInt(productId));
-          if (index !== -1) {
-            products[index] = { ...formData, id: parseInt(productId) };
-            toast.success("Produkt aktualisiert!");
-          }
-        } else {
-          // Add new product
-          const newId = products.length > 0 ? Math.max(...products.map((p: any) => p.id)) + 1 : 1;
-          products.push({ ...formData, id: newId });
-          toast.success("Produkt hinzugefügt!");
-        }
-
-        localStorage.setItem("products", JSON.stringify(products));
-        setLoading(false);
-
-        // Navigate back to admin dashboard
-        navigate("/admin-dashboard");
-      } catch (error) {
-        console.error("Error saving product:", error);
-        toast.error("Fehler beim Speichern!");
-        setLoading(false);
+      if (isEditing && productId) {
+        await updateProductMutation.mutateAsync({
+          id: Number(productId),
+          ...payload,
+        });
+        toast.success("Produkt aktualisiert!");
+      } else {
+        await createProductMutation.mutateAsync(payload);
+        toast.success("Produkt hinzugefügt!");
       }
-    }, 1000);
+
+      navigate(`/admin-dashboard?tab=${tab}`);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast.error("Fehler beim Speichern!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
-    navigate("/admin-dashboard");
+    navigate(`/admin-dashboard?tab=${tab}`);
   };
 
   return (
@@ -186,9 +212,8 @@ export default function AdminProductEditor() {
                 </label>
                 <input
                   type="number"
-                  name="basePrice"
-                  value={formData.basePrice}
-                  onChange={handleInputChange}
+                  value={priceInput}
+                  onChange={(e) => setPriceInput(e.target.value)}
                   placeholder="99.99"
                   step="0.01"
                   className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
@@ -280,7 +305,9 @@ export default function AdminProductEditor() {
                 <div className="flex-1">
                   <input
                     type="text"
+                    value={imageUrlInput}
                     placeholder="Oder URL eingeben..."
+                    onChange={(e) => setImageUrlInput(e.target.value)}
                     onBlur={(e) => e.target.value && handleImageUrl(e.target.value)}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                   />

@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `paymentStatus` enum('pending','paid','unpaid') DEFAULT 'pending' NOT NULL;

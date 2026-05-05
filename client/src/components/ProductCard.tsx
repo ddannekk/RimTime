@@ -34,6 +34,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
       name: product.name,
       size: product.size,
       style: product.style,
+      image: product.image,
     });
     triggerAddToCartVisual({ sourceElement: event.currentTarget, image: product.image });
     triggerOpenCartPanel();
@@ -57,7 +58,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
             <img
               src={product.image}
               alt={product.name}
-              className={`${compact ? "h-56" : "h-64"} w-full object-cover transition-transform duration-500 group-hover:scale-110`}
+              className={`${compact ? "h-52 md:h-56" : "h-60 md:h-64"} w-full object-cover transition-transform duration-500 group-hover:scale-110`}
             />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.32),transparent_45%),linear-gradient(to_top,rgba(15,23,42,0.25),transparent_40%)] opacity-80" />
           </div>
@@ -65,16 +66,18 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
       </Link>
 
       <div className="space-y-4 p-5 pt-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-accent/80">{product.style}</p>
             <Link href={`/products/${product.id}`} className="block">
               <h3 className="text-xl font-semibold text-foreground transition-colors group-hover:text-accent">{product.name}</h3>
             </Link>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-sm font-semibold text-accent">
-            <Star className="h-4 w-4 fill-current" />
-            {product.upvotes}
+          <div className="inline-flex shrink-0 self-start rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent" title={`${product.upvotes} Bewertungen`}>
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Star className="h-4 w-4 fill-current" />
+              <span>{product.upvotes}</span>
+            </span>
           </div>
         </div>
 
@@ -87,7 +90,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
             <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">ab</p>
             <p className="text-2xl font-bold text-foreground">€{(product.basePrice / 100).toFixed(2)}</p>
           </div>
-          <Link href={`/products/${product.id}`} className="hidden items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-accent md:flex">
+          <Link href={`/products/${product.id}`} className="hidden items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-accent lg:flex">
             Details <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { useParams } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import { Star, ThumbsUp, ThumbsDown, ShoppingCart, Heart, Share2, TrendingUp, ShieldCheck, Truck, TimerReset } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useParams } from "wouter";
+import { Eye, Star, ThumbsUp, ShoppingCart, Heart, Share2, TrendingUp, ShieldCheck, Truck, TimerReset } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import { triggerAddToCartVisual, triggerOpenCartPanel } from "@/lib/cartEffects";
+import { FREE_SHIPPING_THRESHOLD, RETURN_DAYS } from "@/lib/storePolicies";
 
 interface Product {
   id: number;
@@ -40,37 +40,43 @@ const generateRandomReviews = (productId: number, count: number = 8): Review[] =
     "Die Verarbeitung ist wirklich hochwertig.",
     "Genau wie beschrieben. Sehr zufrieden!",
     "Ein echter Hingucker in meinem Zimmer!",
-    "Beste Investition ever! Würde ich immer wieder kaufen.",
+    "Würde ich sofort wieder kaufen. Wirkt im Raum deutlich stärker als erwartet.",
   ];
 
   return Array.from({ length: count }, (_, index) => ({
     id: index + 1,
     productId,
-    rating: Math.floor(Math.random() * 2) + 4,
+    rating: ((productId + index) % 2) + 4,
     comment: comments[index % comments.length],
     author: authors[index % authors.length],
-    createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(Date.now() - ((((productId * 7) + (index * 5)) % 28) + 2) * 24 * 60 * 60 * 1000),
   }));
 };
 
+function getReviewAgeInDays(createdAt: Date | string) {
+  const timestamp = new Date(createdAt).getTime();
+  if (!Number.isFinite(timestamp)) return 1;
+  return Math.max(1, Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000)));
+}
+
 export default function ProductDetail() {
   const params = useParams();
+  const [, navigate] = useLocation();
   const productId = parseInt(params.id || "0", 10);
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
+  const [userVote, setUserVote] = useState<"up" | null>(null);
   const [viewCount, setViewCount] = useState(0);
-  const [showStickyBar, setShowStickyBar] = useState(false);
-  const primaryActionRef = useRef<HTMLButtonElement | null>(null);
+  const [personalizationText, setPersonalizationText] = useState("");
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const upvoteMutation = trpc.products.upvote.useMutation();
-  const downvoteMutation = trpc.products.downvote.useMutation();
 
   const { data: productData } = trpc.products.getById.useQuery({ id: productId });
   const { data: reviewsData } = trpc.products.getReviews.useQuery({ productId });
+  const { data: allProductsData } = trpc.products.getAll.useQuery();
 
   useEffect(() => {
     if (productData) {
@@ -88,31 +94,32 @@ export default function ProductDetail() {
   }, [reviewsData]);
 
   useEffect(() => {
-    if (!primaryActionRef.current) return;
-
-    const observer = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), {
-      threshold: 0.8,
-    });
-
-    observer.observe(primaryActionRef.current);
-    return () => observer.disconnect();
-  }, [product?.id]);
+    setPersonalizationText("");
+    setQuantity(1);
+  }, [productId]);
 
   const handleAddToCart = (sourceElement?: HTMLElement | null) => {
     if (!product) return;
+    const personalization = personalizationText.trim() || undefined;
 
     addItem({
       productId: product.id,
       quantity,
-      price: product.basePrice,
+      price: product.basePrice + (personalization ? 990 : 0),
       name: product.name,
       size: product.size,
       style: product.style,
+      image: product.image,
+      personalization,
     });
 
     triggerAddToCartVisual({ sourceElement, image: product.image });
     triggerOpenCartPanel();
-    toast.success(`${product.name} wurde zum Warenkorb hinzugefügt!`);
+    toast.success(
+      personalization
+        ? `${product.name} mit Personalisierung wurde zum Warenkorb hinzugefügt!`
+        : `${product.name} wurde zum Warenkorb hinzugefügt!`
+    );
   };
 
   const handleUpvote = async () => {
@@ -122,26 +129,9 @@ export default function ProductDetail() {
       setProduct({
         ...product,
         upvotes: userVote === "up" ? product.upvotes - 1 : product.upvotes + 1,
-        downvotes: userVote === "down" ? product.downvotes - 1 : product.downvotes,
       });
       setUserVote(userVote === "up" ? null : "up");
-      toast.success("Danke für deine Bewertung!");
-    } catch {
-      toast.error("Fehler beim Abstimmen");
-    }
-  };
-
-  const handleDownvote = async () => {
-    if (!product) return;
-    try {
-      await downvoteMutation.mutateAsync({ productId: product.id });
-      setProduct({
-        ...product,
-        downvotes: userVote === "down" ? product.downvotes - 1 : product.downvotes + 1,
-        upvotes: userVote === "up" ? product.upvotes - 1 : product.upvotes,
-      });
-      setUserVote(userVote === "down" ? null : "down");
-      toast.success("Danke für deine Bewertung!");
+      toast.success("Danke für Ihre Bewertung!");
     } catch {
       toast.error("Fehler beim Abstimmen");
     }
@@ -177,7 +167,7 @@ export default function ProductDetail() {
     return (
       <div className="container py-12">
         <div className="animate-pulse">
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-12 xl:grid-cols-2">
             <div className="aspect-square rounded-lg bg-muted" />
             <div>
               <div className="mb-4 h-8 w-3/4 rounded bg-muted" />
@@ -200,11 +190,17 @@ export default function ProductDetail() {
 
   const rating = reviews.length > 0 ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1) : "5.0";
   const isFavorite = isInWishlist(product.id);
+  const personalization = personalizationText.trim();
+  const personalizationFee = personalization ? 990 : 0;
+  const displayPrice = product.basePrice + personalizationFee;
+  const sizeVariants = ((allProductsData as Product[] | undefined) ?? [])
+    .filter((candidate) => candidate.style === product.style)
+    .sort((left, right) => parseInt(left.size, 10) - parseInt(right.size, 10));
 
   return (
     <div className="w-full">
       <div className="container py-12">
-        <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2">
+        <div className="mb-16 grid grid-cols-1 gap-10 xl:grid-cols-2 xl:gap-12">
           <div>
             <div className="group relative aspect-square overflow-hidden rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.28),rgba(255,255,255,0)_42%),linear-gradient(145deg,rgba(255,255,255,0.18),rgba(15,23,42,0.1))] shadow-[0_24px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(255,255,255,0)_42%),linear-gradient(145deg,rgba(255,255,255,0.06),rgba(15,23,42,0.45))]">
               <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -238,12 +234,68 @@ export default function ProductDetail() {
                 </span>
               </button>
             </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                { icon: ShieldCheck, title: "Sichere Zahlung", copy: "PayPal, Visa, Klarna oder Vorkasse" },
+                { icon: Truck, title: "Schneller Versand", copy: `Gratis ab €${(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)}` },
+                { icon: TimerReset, title: "Rückgabe", copy: `${RETURN_DAYS} Tage Rückgaberecht` },
+              ].map(({ icon: Icon, title, copy }) => (
+                <div key={title} className="rounded-2xl border border-border/70 bg-card/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <Icon className="mb-3 h-5 w-5 text-accent" />
+                  <p className="text-sm font-semibold text-foreground">{title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-[1.5rem] border border-accent/20 bg-accent/5 p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Personalisierung</p>
+              <h2 className="mt-3 text-xl font-semibold text-foreground">Individueller Wunschtext</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Wir bieten eine kurze Personalisierung für Ihr Produkt an, zum Beispiel Initialen, Fahrername, Teamname oder Startnummer.
+                Maximal 12 Zeichen, gegen Aufpreis und ohne simulierte Vorschau direkt im Produktbild.
+              </p>
+              <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-foreground">Wunschtext</label>
+                  <input
+                    type="text"
+                    maxLength={12}
+                    value={personalizationText}
+                    onChange={(event) => setPersonalizationText(event.target.value.toUpperCase())}
+                    placeholder="z.B. M3 CSL"
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    {personalizationText.length}/12 Zeichen
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-accent/20 bg-background/70 px-4 py-3 text-sm dark:bg-black/20">
+                  <p className="text-muted-foreground">Aufpreis</p>
+                  <p className="mt-1 text-2xl font-bold text-accent">€9.90</p>
+                  <p className="mt-2 max-w-[12rem] text-xs text-muted-foreground">Nur wenn Sie einen Wunschtext eingeben.</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {["AMG", "MAX", "M3 CSL", "No. 77"].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setPersonalizationText(preset.toUpperCase())}
+                    className="rounded-full border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:border-accent hover:text-accent"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>
-            <h1 className="mb-2 text-4xl font-bold text-foreground">{product.name}</h1>
+            <h1 className="mb-2 text-3xl font-bold text-foreground sm:text-4xl">{product.name}</h1>
 
-            <div className="mb-6 flex items-center gap-4">
+            <div className="mb-6 flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((index) => (
                   <Star key={index} className="h-5 w-5 fill-accent text-accent" />
@@ -251,13 +303,16 @@ export default function ProductDetail() {
               </div>
               <span className="text-lg font-semibold text-foreground">{rating}</span>
               <span className="text-muted-foreground">({reviews.length} Bewertungen)</span>
-              <span className="ml-auto text-sm text-muted-foreground">👁️ {viewCount} Views</span>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground sm:ml-auto">
+                <Eye className="h-4 w-4" />
+                {viewCount} Aufrufe
+              </span>
             </div>
 
             <p className="mb-6 text-lg text-muted-foreground">{product.description}</p>
 
             <div className="mb-6 rounded-[1.5rem] border border-border/70 bg-card/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Größe</p>
                   <p className="font-semibold text-foreground">{product.size}</p>
@@ -269,87 +324,94 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <p className="mb-2 text-sm text-muted-foreground">Preis</p>
-              <p className="text-4xl font-bold text-accent">€{(product.basePrice / 100).toFixed(2)}</p>
-              <p className="mt-2 text-sm text-muted-foreground">✓ Kostenloser Versand</p>
-            </div>
-
-            <div className="mb-6 grid gap-3 md:grid-cols-3">
-              {[
-                { icon: ShieldCheck, title: "Sichere Zahlung", copy: "PayPal, Visa, Klarna" },
-                { icon: Truck, title: "Schneller Versand", copy: "Versand aus Deutschland" },
-                { icon: TimerReset, title: "Silent Movement", copy: "Kein Tick-Geräusch" },
-              ].map(({ icon: Icon, title, copy }) => (
-                <div key={title} className="rounded-2xl border border-border/70 bg-card/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                  <Icon className="mb-3 h-5 w-5 text-accent" />
-                  <p className="text-sm font-semibold text-foreground">{title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+            {sizeVariants.length > 1 && (
+              <div className="mb-6 rounded-[1.5rem] border border-border/70 bg-card/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Variante wählen</p>
+                    <h2 className="mt-2 text-xl font-semibold text-foreground">Gleicher Style, andere Größe</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">Sie wechseln nur die Präsenz im Raum, nicht das Design.</p>
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="mb-6 rounded-[1.5rem] border border-accent/20 bg-accent/5 p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Sizing guide</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-lg font-semibold text-foreground">30 cm</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Für Desk-Setups, Regale oder kleinere Wandflächen mit klarer Form.</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">45 cm</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Für große Wände, Garage-Spaces und dominante Platzierung.</p>
+                <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                  {sizeVariants.map((variant) => {
+                    const active = variant.id === product.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => !active && navigate(`/products/${variant.id}`)}
+                        className={`rounded-2xl border p-4 text-left transition-all ${
+                          active
+                            ? "border-accent bg-accent/10 shadow-[0_16px_36px_rgba(234,88,12,0.12)]"
+                            : "border-border/70 bg-background/70 hover:border-accent/40 hover:bg-accent/5"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-3">
+                          <div className="min-w-0">
+                            <p className="text-lg font-semibold text-foreground">{variant.size}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {variant.size === "30cm" ? "Ideal für Schreibtisch, Regal oder kleinere Wände." : "Stärker für große Wandflächen und eine bewusste Platzierung."}
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-accent">€{(variant.basePrice / 100).toFixed(2)}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-foreground">Menge</label>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="rounded border border-border px-3 py-2 transition-colors hover:bg-muted">
-                  −
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(event) => setQuantity(Math.max(1, parseInt(event.target.value, 10) || 1))}
-                  className="w-16 rounded border border-border px-3 py-2 text-center"
-                />
-                <button onClick={() => setQuantity(quantity + 1)} className="rounded border border-border px-3 py-2 transition-colors hover:bg-muted">
-                  +
+            <div className="rounded-[1.5rem] border border-border/70 bg-background/92 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur xl:sticky xl:top-28 dark:border-white/10 dark:bg-slate-950/88">
+              <div className="mb-6">
+                <p className="mb-2 text-sm text-muted-foreground">Preis</p>
+                <p className="text-3xl font-bold text-accent sm:text-4xl">€{(displayPrice / 100).toFixed(2)}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {personalization
+                    ? `Inklusive €${(personalizationFee / 100).toFixed(2)} Personalisierung. Gratis Versand ab €${(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)}.`
+                    : `Gratis Versand ab €${(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)}.`}
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-foreground">Menge</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="rounded border border-border px-3 py-2 transition-colors hover:bg-muted">
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(event) => setQuantity(Math.max(1, parseInt(event.target.value, 10) || 1))}
+                    className="w-16 rounded border border-border px-3 py-2 text-center"
+                  />
+                  <button onClick={() => setQuantity(quantity + 1)} className="rounded border border-border px-3 py-2 transition-colors hover:bg-muted">
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={(event) => handleAddToCart(event.currentTarget)}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                In den Warenkorb
+              </button>
+
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={handleUpvote}
+                  className={`flex items-center gap-2 rounded border px-4 py-2 transition-colors ${
+                    userVote === "up" ? "border-accent bg-accent text-accent-foreground" : "border-border text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <ThumbsUp className="h-5 w-5" />
+                  <span>{product.upvotes}</span>
                 </button>
               </div>
-            </div>
-
-            <button
-              ref={primaryActionRef}
-              onClick={(event) => handleAddToCart(event.currentTarget)}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              In den Warenkorb
-            </button>
-
-            <div className="flex gap-4">
-              <button
-                onClick={handleUpvote}
-                className={`flex items-center gap-2 rounded border px-4 py-2 transition-colors ${
-                  userVote === "up" ? "border-accent bg-accent text-accent-foreground" : "border-border text-foreground hover:bg-muted"
-                }`}
-              >
-                <ThumbsUp className="h-5 w-5" />
-                <span>{product.upvotes}</span>
-              </button>
-              <button
-                onClick={handleDownvote}
-                className={`flex items-center gap-2 rounded border px-4 py-2 transition-colors ${
-                  userVote === "down" ? "border-red-600 bg-red-600 text-white" : "border-border text-foreground hover:bg-muted"
-                }`}
-              >
-                <ThumbsDown className="h-5 w-5" />
-                <span>{product.downvotes}</span>
-              </button>
             </div>
           </div>
         </div>
@@ -369,7 +431,7 @@ export default function ProductDetail() {
                         ))}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">vor {Math.floor(Math.random() * 30)} Tagen</span>
+                    <span className="text-xs text-muted-foreground">vor {getReviewAgeInDays(review.createdAt)} Tagen</span>
                   </div>
                   <p className="text-foreground">{review.comment}</p>
                 </div>
@@ -381,35 +443,6 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showStickyBar && product && (
-          <motion.div
-            initial={{ y: 120, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 120, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 bottom-4 z-40 px-4"
-          >
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-[1.75rem] border border-white/10 bg-slate-950/88 px-5 py-4 text-white shadow-[0_24px_60px_rgba(15,23,42,0.42)] backdrop-blur-xl">
-              <div className="min-w-0">
-                <p className="truncate text-sm uppercase tracking-[0.22em] text-orange-300/80">{product.style}</p>
-                <p className="truncate text-lg font-semibold">{product.name}</p>
-              </div>
-              <div className="hidden text-right sm:block">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">ab</p>
-                <p className="text-2xl font-bold text-orange-300">€{(product.basePrice / 100).toFixed(2)}</p>
-              </div>
-              <button
-                onClick={(event) => handleAddToCart(event.currentTarget)}
-                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-accent px-5 py-3 font-semibold text-accent-foreground shadow-[0_16px_28px_rgba(234,88,12,0.28)] hover:bg-accent/90"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                Jetzt kaufen
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ShoppingCart, Heart } from "lucide-react";
+import { X, ShoppingCart, Heart, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
       name: product.name,
       size: product.size,
       style: product.style,
+      image: product.image,
     });
     triggerOpenCartPanel();
     toast.success("Zu Warenkorb hinzugefügt!");
@@ -50,7 +51,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
       price: product.basePrice,
       image: product.image,
     });
-    toast.success("Zu Wishlist hinzugefügt!");
+    toast.success("Zur Merkliste hinzugefügt!");
   };
 
   const inWishlist = isInWishlist(product.id);
@@ -80,7 +81,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
               <div className="flex items-center gap-4 mb-6">
                 <span className="text-4xl font-bold text-accent">€{(product.basePrice / 100).toFixed(2)}</span>
                 <div className="flex items-center gap-1 text-sm">
-                  <span className="text-yellow-500">⭐</span>
+                  <Star className="h-4 w-4 fill-accent text-accent" />
                   <span className="text-foreground font-semibold">{product.upvotes} Bewertungen</span>
                 </div>
               </div>

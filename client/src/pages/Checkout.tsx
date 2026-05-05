@@ -5,6 +5,12 @@ import { trpc } from "@/lib/trpc";
 import { saveLocalOrder, trackFunnelEvent } from "@/lib/localAnalytics";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Star } from "lucide-react";
+import {
+  FREE_SHIPPING_THRESHOLD,
+  getIncludedVat,
+  getRemainingForFreeShipping,
+  getShippingCost,
+} from "@/lib/storePolicies";
 
 interface Product {
   id: number;
@@ -16,13 +22,29 @@ interface Product {
   upvotes: number;
 }
 
+type PaymentMethod = "paypal" | "visa" | "klarna" | "vorkasse";
+
+const PAYMENT_METHODS: Array<{
+  id: PaymentMethod;
+  title: string;
+  copy: string;
+  badge: string;
+}> = [
+  { id: "paypal", title: "PayPal", copy: "Schnelle Zahlung mit Ihrem PayPal-Konto.", badge: "Sofort" },
+  { id: "visa", title: "Visa / Kreditkarte", copy: "Klassische Kartenzahlung direkt an der Kasse.", badge: "Karte" },
+  { id: "klarna", title: "Klarna", copy: "Später bezahlen oder flexibel aufteilen, wenn verfügbar.", badge: "Flexibel" },
+  { id: "vorkasse", title: "Vorkasse", copy: "Banküberweisung nach Bestellbestätigung.", badge: "Überweisung" },
+];
+
 export default function Checkout() {
   const [, navigate] = useLocation();
   const { items, getTotalPrice, clearCart, addItem } = useCart();
+  const utils = trpc.useUtils();
   const [loading, setLoading] = useState(false);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("paypal");
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -78,34 +100,43 @@ export default function Checkout() {
   }, [productsData, items]);
 
   const totalPrice = getTotalPrice();
-  const shippingCost = 500;
+  const shippingCost = getShippingCost(totalPrice);
+  const amountUntilFreeShipping = getRemainingForFreeShipping(totalPrice);
   const discountAmount = Math.round(totalPrice * (discount / 100));
-  const tax = Math.round((totalPrice - discountAmount) * 0.19);
-  const total = totalPrice - discountAmount + tax + shippingCost;
+  const total = totalPrice - discountAmount + shippingCost;
+  const includedVat = getIncludedVat(total);
 
   const handlePromoCode = () => {
-    if (promoCode === "SCHOOL20") {
-      setDiscount(20);
+    const applyPromo = async () => {
+      const normalizedCode = promoCode.trim().toUpperCase();
+      if (!normalizedCode) {
+        setDiscount(0);
+        toast.error("Bitte Promo-Code eingeben");
+        return;
+      }
+
+      const result = await utils.promoCodes.validate.fetch({ code: normalizedCode });
+      if (!result.valid) {
+        setDiscount(0);
+        toast.error("Ungültiger Promo-Code");
+        return;
+      }
+
+      setDiscount(result.discount);
       trackFunnelEvent({
         type: "promo_applied",
         payload: {
-          code: "SCHOOL20",
-          discountPercent: 20,
+          code: normalizedCode,
+          discountPercent: result.discount,
         },
       });
-    } else if (promoCode === "RIMTIME10") {
-      setDiscount(10);
-      trackFunnelEvent({
-        type: "promo_applied",
-        payload: {
-          code: "RIMTIME10",
-          discountPercent: 10,
-        },
-      });
-    } else {
+      toast.success(`${result.discount}% Rabatt angewendet.`);
+    };
+
+    applyPromo().catch(() => {
       setDiscount(0);
-      alert("Ungültiger Promo-Code!");
-    }
+      toast.error("Ungültiger Promo-Code");
+    });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -134,10 +165,13 @@ export default function Checkout() {
         customerEmail: formData.customerEmail,
         customerAddress: formData.customerAddress,
         totalPrice: total,
+        paymentMethod,
+        promoCode: discount > 0 ? promoCode.trim().toUpperCase() : undefined,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
+          personalization: item.personalization,
         })),
       });
 
@@ -196,7 +230,7 @@ export default function Checkout() {
             <ArrowLeft className="w-5 h-5" />
             Zurück zum Warenkorb
           </Link>
-          <h1 className="text-4xl font-bold text-foreground">Checkout</h1>
+          <h1 className="text-4xl font-bold text-foreground">Kasse</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -235,7 +269,7 @@ export default function Checkout() {
                       value={formData.customerEmail}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      placeholder="max@example.com"
+                      placeholder="max@rimtime-shop.de"
                       required
                     />
                   </div>
@@ -263,11 +297,32 @@ export default function Checkout() {
                   Zahlungsart
                 </h2>
 
-                <div className="p-4 bg-accent/10 border border-accent rounded-lg">
-                  <p className="font-semibold text-foreground mb-2">Vorkasse (Banküberweisung)</p>
-                  <p className="text-sm text-muted-foreground">
-                    Nach Aufgabe der Bestellung erhalten Sie eine Bestätigung mit den Bankdaten für die Überweisung.
-                  </p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {PAYMENT_METHODS.map((method) => {
+                    const active = paymentMethod === method.id;
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(method.id)}
+                        className={`rounded-2xl border p-4 text-left transition-all ${
+                          active
+                            ? "border-accent bg-accent/10 shadow-[0_16px_32px_rgba(234,88,12,0.12)]"
+                            : "border-border bg-background hover:border-accent/40 hover:bg-accent/5"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-foreground">{method.title}</p>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{method.copy}</p>
+                          </div>
+                          <span className="rounded-full bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                            {method.badge}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -289,8 +344,8 @@ export default function Checkout() {
                           <span className="font-bold text-accent">€{(product.basePrice / 100).toFixed(2)}</span>
                           <div className="flex items-center gap-1 text-xs">
                             <Star className="w-3 h-3 fill-accent text-accent" />
-                            <span>{product.upvotes}</span>
-                          </div>
+                          <span>{product.upvotes}</span>
+                        </div>
                         </div>
                         <button
                           type="button"
@@ -302,8 +357,9 @@ export default function Checkout() {
                               name: product.name,
                               size: product.size,
                               style: product.style,
+                              image: product.image,
                             });
-                            toast.success("Zu Warenkorb hinzugefügt!");
+                            toast.success("Zum Warenkorb hinzugefügt!");
                           }}
                           className="w-full px-3 py-2 bg-accent/20 text-accent border border-accent rounded text-sm font-medium hover:bg-accent/30 transition-colors"
                         >
@@ -316,12 +372,30 @@ export default function Checkout() {
               )}
 
               {/* Submit Button */}
+              <p className="text-sm text-muted-foreground">
+                Mit Klick auf
+                {" "}
+                „zahlungspflichtig bestellen“
+                {" "}
+                geben Sie eine verbindliche Bestellung ab. Es gelten unsere
+                {" "}
+                <Link href="/terms" className="text-accent hover:underline">
+                  AGB
+                </Link>
+                {" "}
+                und
+                {" "}
+                <Link href="/privacy" className="text-accent hover:underline">
+                  Datenschutzhinweise
+                </Link>
+                .
+              </p>
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Wird verarbeitet..." : "Bestellung abschließen"}
+                {loading ? "Wird verarbeitet..." : "Zahlungspflichtig bestellen"}
               </button>
             </form>
           </div>
@@ -333,9 +407,13 @@ export default function Checkout() {
 
               <div className="space-y-3 mb-6 pb-6 border-b border-border">
                 {items.map((item) => (
-                  <div key={item.productId} className="flex justify-between text-sm">
+                  <div key={item.cartKey} className="flex justify-between gap-4 text-sm">
                     <span className="text-muted-foreground">
                       {item.name} x {item.quantity}
+                      <span className="block text-xs text-accent/80">{item.size} • {item.style}</span>
+                      {item.personalization && (
+                        <span className="block text-xs text-accent">Personalisierung: {item.personalization}</span>
+                      )}
                     </span>
                     <span className="text-foreground">
                       €{((item.price * item.quantity) / 100).toFixed(2)}
@@ -347,28 +425,41 @@ export default function Checkout() {
               {/* Promo Code */}
               <div className="mb-6 pb-6 border-b border-border">
                 <label className="block text-sm font-medium text-foreground mb-2">Promo-Code</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input
                     type="text"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                     placeholder="z.B. SCHOOL20"
-                    className="flex-1 px-3 py-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    className="min-w-0 flex-1 px-3 py-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                   <button
                     type="button"
                     onClick={handlePromoCode}
-                    className="px-3 py-2 bg-accent/10 text-accent rounded hover:bg-accent/20 transition-colors font-medium"
+                    className="shrink-0 px-4 py-2 bg-accent/10 text-accent rounded hover:bg-accent/20 transition-colors font-medium"
                   >
                     Anwenden
                   </button>
                 </div>
                 {discount > 0 && (
-                  <p className="text-sm text-green-600 mt-2">✓ {discount}% Rabatt angewendet!</p>
+                  <p className="text-sm text-green-600 mt-2">{discount}% Rabatt angewendet</p>
                 )}
               </div>
 
               <div className="space-y-3 mb-6 pb-6 border-b border-border">
+                <div className="rounded-2xl border border-accent/15 bg-accent/5 px-4 py-3 text-sm">
+                  {amountUntilFreeShipping > 0 ? (
+                    <p className="text-muted-foreground">
+                      Noch <span className="font-semibold text-accent">€{(amountUntilFreeShipping / 100).toFixed(2)}</span> bis zum gratis Versand.
+                    </p>
+                  ) : (
+                    <p className="font-medium text-accent">Gratis Versand ab €{(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)} ist aktiviert.</p>
+                  )}
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Zahlungsart</span>
+                  <span className="text-foreground">{PAYMENT_METHODS.find((method) => method.id === paymentMethod)?.title}</span>
+                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zwischensumme</span>
                   <span className="text-foreground">€{(totalPrice / 100).toFixed(2)}</span>
@@ -381,11 +472,13 @@ export default function Checkout() {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Versand</span>
-                  <span className="text-foreground">€{(shippingCost / 100).toFixed(2)}</span>
+                  <span className="text-foreground">
+                    {shippingCost === 0 ? "Gratis" : `€${(shippingCost / 100).toFixed(2)}`}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Steuern (19%)</span>
-                  <span className="text-foreground">€{(tax / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">inkl. 19% MwSt.</span>
+                  <span className="text-foreground">€{(includedVat / 100).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -400,8 +493,8 @@ export default function Checkout() {
               <div className="p-3 bg-accent/10 border border-accent rounded-lg flex items-start gap-2">
                 <Clock className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-accent">
-                  <p className="font-semibold">Limitiertes Angebot!</p>
-                  <p>Nur noch 2 Tage zum Aktionspreis</p>
+                  <p className="font-semibold">Versandvorteil aktiv</p>
+                  <p>Ab €{(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)} versenden wir kostenlos innerhalb Deutschlands.</p>
                 </div>
               </div>
             </div>

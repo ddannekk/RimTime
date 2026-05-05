@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { CheckCircle, Copy } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { getMerchantDisplayName } from "@/lib/legal";
 
 interface Order {
   id: number;
@@ -12,8 +13,16 @@ interface Order {
   customerAddress: string;
   totalPrice: number;
   status: string;
+  paymentMethod: "paypal" | "visa" | "klarna" | "vorkasse";
   createdAt: Date;
 }
+
+const PAYMENT_METHOD_LABELS: Record<Order["paymentMethod"], string> = {
+  paypal: "PayPal",
+  visa: "Visa / Kreditkarte",
+  klarna: "Klarna",
+  vorkasse: "Vorkasse",
+};
 
 export default function OrderConfirmation() {
   const params = useParams();
@@ -56,6 +65,9 @@ export default function OrderConfirmation() {
       </div>
     );
   }
+
+  const paymentMethod = order.paymentMethod ?? "vorkasse";
+  const requiresBankTransfer = paymentMethod === "vorkasse";
 
   return (
     <div className="w-full">
@@ -112,42 +124,57 @@ export default function OrderConfirmation() {
                   €{(order.totalPrice / 100).toFixed(2)}
                 </span>
               </div>
+
+              <div className="flex justify-between pb-4 border-t border-border pt-4">
+                <span className="text-muted-foreground">Zahlungsart</span>
+                <span className="text-foreground">{PAYMENT_METHOD_LABELS[paymentMethod]}</span>
+              </div>
             </div>
           </div>
 
           {/* Payment Instructions */}
-          <div className="card mb-8 bg-accent/5 border-accent">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Zahlungsanweisung</h2>
+          {requiresBankTransfer ? (
+            <div className="card mb-8 bg-accent/5 border-accent">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Zahlungsanweisung</h2>
 
-            <div className="bg-background rounded-lg p-4 mb-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-3">
-                Bitte überweisen Sie den Gesamtbetrag auf folgendes Konto:
-              </p>
+              <div className="bg-background rounded-lg p-4 mb-4 border border-border">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Bitte überweisen Sie den Gesamtbetrag auf folgendes Konto:
+                </p>
 
-              <div className="space-y-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Kontoinhaber</p>
-                  <p className="font-semibold text-foreground">RIMtime GmbH</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">IBAN</p>
-                  <p className="font-semibold text-foreground">DE89 3704 0044 0532 0130 00</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">BIC</p>
-                  <p className="font-semibold text-foreground">COBADEFFXXX</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Verwendungszweck</p>
-                  <p className="font-semibold text-foreground">{orderNumber}</p>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Kontoinhaber</p>
+                    <p className="font-semibold text-foreground">{getMerchantDisplayName()}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">IBAN</p>
+                    <p className="font-semibold text-foreground">DE89 3704 0044 0532 0130 00</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">BIC</p>
+                    <p className="font-semibold text-foreground">COBADEFFXXX</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Verwendungszweck</p>
+                    <p className="font-semibold text-foreground">{orderNumber}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <p className="text-sm text-muted-foreground">
-              Bitte nutzen Sie die Bestellnummer als Referenz. Sobald wir die Zahlung erhalten haben, wird Ihre Bestellung bearbeitet und versendet.
-            </p>
-          </div>
+              <p className="text-sm text-muted-foreground">
+                Bitte nutzen Sie die Bestellnummer als Referenz. Sobald wir die Zahlung erhalten haben, wird Ihre Bestellung bearbeitet und versendet.
+              </p>
+            </div>
+          ) : (
+            <div className="card mb-8 bg-accent/5 border-accent">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Zahlung erfasst</h2>
+              <p className="text-muted-foreground">
+                Ihre Bestellung wurde mit <span className="font-semibold text-foreground">{PAYMENT_METHOD_LABELS[paymentMethod]}</span> angelegt.
+                Sie erhalten die weitere Bestätigung per E-Mail, sobald die Bestellung geprüft und für den Versand vorbereitet wird.
+              </p>
+            </div>
+          )}
 
           {/* Next Steps */}
           <div className="card">
@@ -159,7 +186,7 @@ export default function OrderConfirmation() {
                   1
                 </span>
                 <span className="text-foreground">
-                  Überweisen Sie den Betrag auf das angegebene Konto
+                  {requiresBankTransfer ? "Überweisen Sie den Betrag auf das angegebene Konto" : "Wir prüfen Ihre Bestellung und bestätigen die Zahlungsfreigabe"}
                 </span>
               </li>
               <li className="flex gap-3">
@@ -167,7 +194,7 @@ export default function OrderConfirmation() {
                   2
                 </span>
                 <span className="text-foreground">
-                  Wir bestätigen den Zahlungseingang per E-Mail
+                  {requiresBankTransfer ? "Wir bestätigen den Zahlungseingang per E-Mail" : "Sie erhalten eine Bestätigung per E-Mail"}
                 </span>
               </li>
               <li className="flex gap-3">

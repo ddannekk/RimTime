@@ -1,83 +1,40 @@
-import { useEffect, useState, useRef } from "react";
-import { Star, ShoppingCart, Users } from "lucide-react";
-
-interface StatItem {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  suffix?: string;
-}
+import { ShieldCheck, Star, Truck } from "lucide-react";
+import { FREE_SHIPPING_THRESHOLD, RETURN_DAYS } from "@/lib/storePolicies";
 
 export default function StatsCounter() {
-  const [stats, setStats] = useState<StatItem[]>([
-    { icon: <Users className="w-8 h-8" />, label: "Zufriedene Kunden", value: 0, suffix: "" },
-    { icon: <ShoppingCart className="w-8 h-8" />, label: "Verkaufte Uhren", value: 0, suffix: "" },
-    { icon: <Star className="w-8 h-8" />, label: "Durchschnittliche Bewertung", value: 0, suffix: "★" },
-  ]);
-
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const targets = [5234, 12456, 4.9];
-    const duration = 2000;
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      setStats((prev) =>
-        prev.map((stat, idx) => ({
-          ...stat,
-          value: Math.floor(targets[idx] * progress * 100) / 100,
-        }))
-      );
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [isVisible]);
+  const stats = [
+    {
+      icon: <Star className="h-7 w-7" />,
+      eyebrow: "Vertrauen",
+      title: "4.8/5 Bewertung",
+      copy: "Positive Rückmeldungen zu Verarbeitung, Optik und Gesamtwirkung.",
+    },
+    {
+      icon: <Truck className="h-7 w-7" />,
+      eyebrow: "Versand",
+      title: `Gratis ab €${(FREE_SHIPPING_THRESHOLD / 100).toFixed(0)}`,
+      copy: "Schneller Versand aus Deutschland mit klarer Lieferzeit.",
+    },
+    {
+      icon: <ShieldCheck className="h-7 w-7" />,
+      eyebrow: "Service",
+      title: `${RETURN_DAYS} Tage Rückgabe`,
+      copy: "Mehr Sicherheit für Ihre Entscheidung auch nach dem Kauf.",
+    },
+  ];
 
   return (
-    <div ref={ref} className="py-16 bg-gradient-to-r from-accent/5 to-accent/10">
+    <div className="py-16 bg-gradient-to-r from-accent/5 to-accent/10">
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="text-center">
-              <div className="flex justify-center mb-4 text-accent">
+            <div key={idx} className="rounded-[1.75rem] border border-border/70 bg-card/80 p-6 text-left shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
                 {stat.icon}
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-                {stat.value.toLocaleString("de-DE", {
-                  maximumFractionDigits: stat.suffix === "★" ? 1 : 0,
-                })}
-                {stat.suffix}
-              </div>
-              <p className="text-muted-foreground text-lg">{stat.label}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent/80">{stat.eyebrow}</p>
+              <div className="mt-3 text-3xl font-bold text-foreground">{stat.title}</div>
+              <p className="mt-3 text-muted-foreground">{stat.copy}</p>
             </div>
           ))}
         </div>

@@ -1,4 +1,16 @@
+import {
+  LEGAL_STAND,
+  getMerchantAddressLine,
+  getMerchantDisplayName,
+  merchantProfile,
+} from "@/lib/legal";
+
 export default function Imprint() {
+  const hasRegisterData = Boolean(
+    merchantProfile.registerCourt.trim() && merchantProfile.registerNumber.trim()
+  );
+  const hasVatId = Boolean(merchantProfile.vatId.trim());
+
   return (
     <div className="w-full">
       <div className="container py-12 md:py-16">
@@ -7,12 +19,18 @@ export default function Imprint() {
 
           <div className="prose prose-invert max-w-none">
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Angaben gemäß § 5 TMG</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
+                Angaben gemäß § 5 DDG
+              </h2>
               <div className="bg-card p-4 rounded-lg border border-border">
                 <p className="text-muted-foreground mb-4">
-                  <strong>RIMtime Shop</strong><br />
-                  Schulprojekt<br />
-                  Deutschland
+                  <strong>{merchantProfile.brandName}</strong>
+                  <br />
+                  {getMerchantDisplayName()}
+                  <br />
+                  {getMerchantAddressLine()}
+                  <br />
+                  {merchantProfile.country}
                 </p>
               </div>
             </section>
@@ -21,51 +39,94 @@ export default function Imprint() {
               <h2 className="text-2xl font-semibold text-foreground mb-4">Kontakt</h2>
               <div className="bg-card p-4 rounded-lg border border-border">
                 <p className="text-muted-foreground">
-                  E-Mail: info@rimtime-shop.de<br />
-                  Telefon: +49 (0) XXX XXXXXXX
+                  E-Mail: {merchantProfile.email}
+                  <br />
+                  Telefon: {merchantProfile.phone}
                 </p>
               </div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Vertreter</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
+                Vertretungsberechtigte Person
+              </h2>
               <p className="text-muted-foreground mb-4">
-                Vertreten durch die Schulgruppe RIMtime
+                {merchantProfile.representative}
               </p>
             </section>
 
+            {hasRegisterData && (
+              <section className="mb-8">
+                <h2 className="text-2xl font-semibold text-foreground mb-4">Registereintrag</h2>
+                <p className="text-muted-foreground mb-4">
+                  Eingetragen im Handelsregister.
+                  <br />
+                  Registergericht: {merchantProfile.registerCourt}
+                  <br />
+                  Registernummer: {merchantProfile.registerNumber}
+                </p>
+              </section>
+            )}
+
+            {hasVatId && (
+              <section className="mb-8">
+                <h2 className="text-2xl font-semibold text-foreground mb-4">
+                  Umsatzsteuer-Identifikationsnummer
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:
+                  <br />
+                  {merchantProfile.vatId}
+                </p>
+              </section>
+            )}
+
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Umsatzsteuer-ID</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
+                Verbraucherstreitbeilegung
+              </h2>
               <p className="text-muted-foreground mb-4">
-                Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br />
-                DE XXX XXX XXX
+                Wir sind nicht verpflichtet und nicht bereit, an einem
+                Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle
+                teilzunehmen.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">Haftung für Inhalte</h2>
               <p className="text-muted-foreground mb-4">
-                Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 des TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
+                Die Inhalte dieser Website werden mit größtmöglicher Sorgfalt erstellt.
+                Für Richtigkeit, Vollständigkeit und Aktualität übernehmen wir jedoch
+                keine Gewähr. Als Diensteanbieter sind wir nach den allgemeinen Gesetzen
+                für eigene Inhalte verantwortlich. Gesetzliche Verpflichtungen zur
+                Entfernung oder Sperrung der Nutzung von Informationen bleiben hiervon
+                unberührt.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">Haftung für Links</h2>
               <p className="text-muted-foreground mb-4">
-                Unsere Website enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.
+                Diese Website enthält Verlinkungen zu externen Seiten Dritter. Auf deren
+                Inhalte haben wir keinen Einfluss und übernehmen dafür keine Gewähr. Für
+                die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder
+                Betreiber verantwortlich. Bei Bekanntwerden konkreter Rechtsverletzungen
+                werden wir entsprechende Links unverzüglich entfernen.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">Urheberrecht</h2>
               <p className="text-muted-foreground mb-4">
-                Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des Autors oder Schöpfers.
+                Die auf dieser Website erstellten Inhalte und Werke unterliegen dem
+                deutschen Urheberrecht. Jede Verwertung außerhalb der gesetzlichen
+                Grenzen bedarf der vorherigen Zustimmung des jeweiligen Rechteinhabers.
               </p>
             </section>
 
             <section className="mb-8">
               <p className="text-sm text-muted-foreground">
-                Stand: Februar 2026
+                Stand: {LEGAL_STAND}
               </p>
             </section>
           </div>

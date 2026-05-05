@@ -72,7 +72,7 @@ export default function Gallery() {
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">Community Galerie</h1>
             <p className="text-lg text-muted-foreground">
-              Teile deine RIMtime Felgenuhr mit der Community
+              Teilen Sie Ihre RIMtime Felgenuhr mit der Community
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export default function Gallery() {
                     value={uploadData.imageUrl}
                     onChange={handleUploadChange}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="https://example.com/image.jpg"
+                    placeholder="https://rimtime-shop.de/beispielbild.jpg"
                     required
                   />
                 </div>
@@ -146,7 +146,7 @@ export default function Gallery() {
                     value={uploadData.description}
                     onChange={handleUploadChange}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Erzähle etwas über dein Foto..."
+                    placeholder="Erzählen Sie etwas über Ihr Foto..."
                     rows={3}
                   />
                 </div>

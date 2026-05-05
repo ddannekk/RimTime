@@ -1,6 +1,8 @@
 import { MapView } from "@/components/Map";
 import { useState, useEffect } from "react";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { getMerchantAddressLine, merchantProfile } from "@/lib/legal";
 
 export default function Contact() {
   const [messages, setMessages] = useState<Array<{name: string; email: string; subject: string; message: string; timestamp: string}>>([]);
@@ -29,13 +31,13 @@ export default function Contact() {
     // Save to localStorage
     localStorage.setItem('contactMessages', JSON.stringify(updatedMessages));
     (e.target as HTMLFormElement).reset();
-    alert('Nachricht gesendet! Sie können sie hier ansehen oder im Admin-Panel.');
+    toast.success("Nachricht gesendet. Sie ist im lokalen Posteingang verfügbar.");
   };
 
   return (
     <div className="container py-12">
       <h1 className="text-4xl font-bold text-foreground mb-2">Kontakt</h1>
-      <p className="text-muted-foreground mb-12">Besuchen Sie uns oder kontaktieren Sie unser Team</p>
+      <p className="text-muted-foreground mb-12">Nutzen Sie das Kontaktformular oder die angegebenen Kontaktdaten.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Contact Info */}
@@ -46,8 +48,9 @@ export default function Contact() {
               <div>
                 <h3 className="font-semibold text-foreground mb-1">Adresse</h3>
                 <p className="text-muted-foreground">
-                  Walter-Eucken-Gymnasium<br />
-                  Freiburg, Deutschland
+                  {merchantProfile.brandName} Showroom<br />
+                  {getMerchantAddressLine()}<br />
+                  {merchantProfile.country}
                 </p>
               </div>
             </div>
@@ -56,7 +59,7 @@ export default function Contact() {
               <Phone className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-foreground mb-1">Telefon</h3>
-                <p className="text-muted-foreground">+49 (0) 761 123-4567</p>
+                <p className="text-muted-foreground">{merchantProfile.phone}</p>
               </div>
             </div>
 
@@ -64,7 +67,7 @@ export default function Contact() {
               <Mail className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-foreground mb-1">Email</h3>
-                <p className="text-muted-foreground">info@rimtime.de</p>
+                <p className="text-muted-foreground">{merchantProfile.email}</p>
               </div>
             </div>
 
@@ -89,7 +92,7 @@ export default function Contact() {
               const map = mapData.map || mapData;
               const google = mapData.google || window.google;
               
-              // Center map on Walter-Eucken-Gymnasium, Freiburg (correct coordinates)
+              // Use a stable demo location for the storefront preview.
               const location = { lat: 48.0197, lng: 7.8409 };
               map.setCenter(location);
               map.setZoom(16);
@@ -99,7 +102,7 @@ export default function Contact() {
                 new google.maps.Marker({
                   position: location,
                   map: map,
-                  title: "Walter-Eucken-Gymnasium",
+                  title: `${merchantProfile.brandName} Showroom`,
                 });
               }
             }}

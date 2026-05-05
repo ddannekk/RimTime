@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { OPEN_CART_PANEL_EVENT } from "@/lib/cartEffects";
+import { getRemainingForFreeShipping, getShippingCost } from "@/lib/storePolicies";
 
 export default function SideCart() {
   const { items, removeItem, updateQuantity, getTotalPrice } = useCart();
@@ -16,7 +17,8 @@ export default function SideCart() {
   }, []);
 
   const subtotal = getTotalPrice();
-  const shipping = items.length > 0 ? 500 : 0;
+  const shipping = getShippingCost(subtotal);
+  const amountUntilFreeShipping = getRemainingForFreeShipping(subtotal);
   const total = subtotal + shipping;
   const totalItems = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
@@ -49,15 +51,30 @@ export default function SideCart() {
           ) : (
             <div className="space-y-4 pt-4">
               {items.map((item) => (
-                <div key={item.productId} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
+                <div key={item.cartKey} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-white">{item.name}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-400">{item.size} • {item.style}</p>
+                    <div className="flex min-w-0 flex-1 gap-3">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/6">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            RIM
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-white">{item.name}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-400">{item.size} • {item.style}</p>
+                        {item.personalization && (
+                          <p className="mt-2 text-sm text-orange-200">Personalisierung: {item.personalization}</p>
+                        )}
+                      </div>
                     </div>
                     <button
-                      onClick={() => removeItem(item.productId)}
+                      onClick={() => removeItem(item.cartKey!)}
                       className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-white/8 hover:text-white"
+                      aria-label={`${item.name} entfernen`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -66,14 +83,14 @@ export default function SideCart() {
                   <div className="mt-4 flex items-center justify-between gap-4">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-2 py-1">
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.cartKey!, item.quantity - 1)}
                         className="rounded-full p-1 text-slate-300 transition-colors hover:bg-white/8 hover:text-white"
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </button>
                       <span className="min-w-6 text-center text-sm font-semibold text-white">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.cartKey!, item.quantity + 1)}
                         className="rounded-full p-1 text-slate-300 transition-colors hover:bg-white/8 hover:text-white"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -92,13 +109,24 @@ export default function SideCart() {
 
         <SheetFooter className="border-t border-white/10 bg-black/20 backdrop-blur-sm">
           <div className="space-y-3">
+            {items.length > 0 && (
+              <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm">
+                {amountUntilFreeShipping > 0 ? (
+                  <p className="text-orange-100">
+                    Noch <span className="font-semibold text-white">€{(amountUntilFreeShipping / 100).toFixed(2)}</span> bis zum gratis Versand.
+                  </p>
+                ) : (
+                  <p className="font-medium text-white">Gratis Versand für diese Bestellung aktiviert.</p>
+                )}
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm text-slate-300">
               <span>Zwischensumme</span>
               <span>€{(subtotal / 100).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-slate-300">
               <span>Versand</span>
-              <span>€{(shipping / 100).toFixed(2)}</span>
+              <span>{shipping === 0 ? "Gratis" : `€${(shipping / 100).toFixed(2)}`}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white">
               <span>Gesamt</span>
