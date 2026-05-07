@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Heart, Upload } from "lucide-react";
+import { withBasePath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -188,7 +189,7 @@ export default function Gallery() {
               <div key={item.id} className="card hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="w-full h-48 bg-muted rounded mb-4 overflow-hidden">
                   <img
-                    src={item.imageUrl}
+                    src={withBasePath(item.imageUrl)}
                     alt={item.title}
                     className="w-full h-full object-cover hover:scale-105 transition-transform"
                   />

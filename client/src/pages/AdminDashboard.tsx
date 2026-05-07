@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { withBasePath } from "@/lib/paths";
 import { useLocation, useSearch } from "wouter";
 import {
   getFunnelStats,
@@ -659,7 +660,7 @@ export default function AdminDashboard() {
                 {products.map(product => (
                   <div key={product.id} className="card">
                     <img
-                      src={product.image}
+                      src={withBasePath(product.image)}
                       alt={product.name}
                       className="w-full h-40 object-cover rounded mb-4"
                     />

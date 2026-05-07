@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ADD_TO_CART_VISUAL_EVENT, AddToCartVisualDetail, triggerCartBump } from "@/lib/cartEffects";
+import { withBasePath } from "@/lib/paths";
 
 interface FlyingItem extends AddToCartVisualDetail {
   targetX: number;
@@ -59,7 +60,7 @@ export default function AddToCartAnimator() {
             className="absolute flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-card shadow-[0_20px_50px_rgba(0,0,0,0.25)]"
           >
             {item.image ? (
-              <img src={item.image} alt="Added to cart" className="h-full w-full object-cover" />
+              <img src={withBasePath(item.image)} alt="Added to cart" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-gradient-to-br from-accent via-accent/80 to-accent/30" />
             )}

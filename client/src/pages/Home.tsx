@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ShieldCheck, Sparkles, Star, Truck, Zap, Gift, GaugeCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { withBasePath } from "@/lib/paths";
 import { useEffect, useState } from "react";
 import StatsCounter from "@/components/StatsCounter";
 import LiveWheelClock from "@/components/LiveWheelClock";
@@ -204,7 +205,7 @@ export default function Home() {
                 className="overflow-hidden rounded-[2rem] border border-border/70 bg-card/80 shadow-sm dark:border-white/10 dark:bg-white/[0.03]"
               >
                 <div className="relative h-80 overflow-hidden">
-                  <img src={scene.image} alt={scene.title} className="h-full w-full object-cover" />
+                  <img src={withBasePath(scene.image)} alt={scene.title} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/28 via-transparent to-slate-950/10" />
                 </div>
                 <div className="p-6">

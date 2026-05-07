@@ -2,6 +2,7 @@ import { useRoute, useLocation, useSearch } from "wouter";
 import { ArrowLeft, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { withBasePath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 
 interface Product {
@@ -281,7 +282,7 @@ export default function AdminProductEditor() {
               {imagePreview && (
                 <div className="mb-4">
                   <img
-                    src={imagePreview}
+                    src={withBasePath(imagePreview)}
                     alt="Preview"
                     className="w-full max-w-xs h-64 object-cover rounded-lg border border-border"
                   />

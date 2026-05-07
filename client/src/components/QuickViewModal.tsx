@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, ShoppingCart, Heart, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { withBasePath } from "@/lib/paths";
 import { toast } from "sonner";
 import { triggerOpenCartPanel } from "@/lib/cartEffects";
 
@@ -70,7 +71,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Image */}
             <div>
-              <img src={product.image} alt={product.name} className="w-full h-96 object-cover rounded-lg" />
+              <img src={withBasePath(product.image)} alt={product.name} className="w-full h-96 object-cover rounded-lg" />
             </div>
 
             {/* Details */}

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { withBasePath } from "@/lib/paths";
 
 interface LiveWheelClockProps {
   image: string;
@@ -75,7 +76,7 @@ export default function LiveWheelClock({ image, name }: LiveWheelClockProps) {
         <div className="relative flex h-full items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[radial-gradient(circle_at_50%_35%,_rgba(255,255,255,0.26),_rgba(255,255,255,0)_35%),linear-gradient(145deg,_rgba(255,255,255,0.2),_rgba(0,0,0,0.35))] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-30px_60px_rgba(0,0,0,0.25)]">
           <div className="absolute inset-[10%] rounded-full border border-white/14 bg-black/15 shadow-[inset_0_18px_35px_rgba(255,255,255,0.12),inset_0_-24px_40px_rgba(0,0,0,0.3)]" />
           <div className="absolute inset-[18%] overflow-hidden rounded-full border border-white/12 shadow-[0_18px_44px_rgba(2,6,23,0.34)]">
-            <img src={image} alt={name} className="h-full w-full object-cover" />
+            <img src={withBasePath(image)} alt={name} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(15,23,42,0)_44%,_rgba(15,23,42,0.34)_100%)]" />
 
             <div className="pointer-events-none absolute inset-0">

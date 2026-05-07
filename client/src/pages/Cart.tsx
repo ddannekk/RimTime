@@ -4,6 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { withBasePath } from "@/lib/paths";
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_DAYS,
@@ -73,7 +74,7 @@ export default function Cart() {
                     <div className="flex min-w-0 flex-1 gap-4">
                       <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-muted sm:h-28 sm:w-28">
                         {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                          <img src={withBasePath(item.image)} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                             RIM

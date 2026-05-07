@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { ArrowUpRight, ShoppingCart, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { triggerAddToCartVisual, triggerOpenCartPanel } from "@/lib/cartEffects";
+import { withBasePath } from "@/lib/paths";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -56,7 +57,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
           <div className="relative overflow-hidden rounded-[1.35rem] bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(15,23,42,0.06))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.06),rgba(15,23,42,0.45))]">
             <div className="absolute inset-x-10 bottom-3 h-8 rounded-full bg-black/15 blur-xl dark:bg-accent/10" />
             <img
-              src={product.image}
+              src={withBasePath(product.image)}
               alt={product.name}
               className={`${compact ? "h-52 md:h-56" : "h-60 md:h-64"} w-full object-cover transition-transform duration-500 group-hover:scale-110`}
             />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { withBasePath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import { X, ArrowLeft } from "lucide-react";
 
@@ -59,7 +60,7 @@ export default function Compare() {
                 {selectedProducts.map((product) => (
                   <th key={product.id} className="px-4 py-3 text-center font-semibold text-foreground min-w-[200px]">
                     <div className="flex flex-col items-center gap-2">
-                      <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded" />
+                      <img src={withBasePath(product.image)} alt={product.name} className="w-20 h-20 object-cover rounded" />
                       <p className="font-semibold">{product.name}</p>
                       <button
                         onClick={() => handleRemoveProduct(product.id)}
@@ -115,7 +116,7 @@ export default function Compare() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableProducts.map((product) => (
             <div key={product.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
-              <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded mb-3" />
+              <img src={withBasePath(product.image)} alt={product.name} className="w-full h-32 object-cover rounded mb-3" />
               <h3 className="font-semibold text-foreground mb-2">{product.name}</h3>
               <p className="text-sm text-muted-foreground mb-3">{product.size} • {product.style}</p>
               <p className="text-lg font-bold text-accent mb-3">€{(product.basePrice / 100).toFixed(2)}</p>

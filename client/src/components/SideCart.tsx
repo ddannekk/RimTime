@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { OPEN_CART_PANEL_EVENT } from "@/lib/cartEffects";
+import { withBasePath } from "@/lib/paths";
 import { getRemainingForFreeShipping, getShippingCost } from "@/lib/storePolicies";
 
 export default function SideCart() {
@@ -56,7 +57,7 @@ export default function SideCart() {
                     <div className="flex min-w-0 flex-1 gap-3">
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/6">
                         {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                          <img src={withBasePath(item.image)} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                             RIM

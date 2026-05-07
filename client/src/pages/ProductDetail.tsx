@@ -6,6 +6,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
 import { triggerAddToCartVisual, triggerOpenCartPanel } from "@/lib/cartEffects";
+import { withBasePath } from "@/lib/paths";
 import { FREE_SHIPPING_THRESHOLD, RETURN_DAYS } from "@/lib/storePolicies";
 
 interface Product {
@@ -203,7 +204,7 @@ export default function ProductDetail() {
         <div className="mb-16 grid grid-cols-1 gap-10 xl:grid-cols-2 xl:gap-12">
           <div>
             <div className="group relative aspect-square overflow-hidden rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.28),rgba(255,255,255,0)_42%),linear-gradient(145deg,rgba(255,255,255,0.18),rgba(15,23,42,0.1))] shadow-[0_24px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(255,255,255,0)_42%),linear-gradient(145deg,rgba(255,255,255,0.06),rgba(15,23,42,0.45))]">
-              <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <img src={withBasePath(product.image)} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute inset-x-10 bottom-5 h-10 rounded-full bg-black/20 blur-2xl dark:bg-accent/12" />
               {product.upvotes > 100 && (
                 <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-sm font-semibold text-accent-foreground">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useCart } from "@/contexts/CartContext";
 import { trpc } from "@/lib/trpc";
+import { withBasePath } from "@/lib/paths";
 import { saveLocalOrder, trackFunnelEvent } from "@/lib/localAnalytics";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Star } from "lucide-react";
@@ -334,7 +335,7 @@ export default function Checkout() {
                     {recommendedProducts.map((product) => (
                       <div key={product.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <img
-                          src={product.image}
+                          src={withBasePath(product.image)}
                           alt={product.name}
                           className="w-full h-32 object-cover rounded mb-3"
                         />

@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Heart, ShoppingCart, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { triggerAddToCartVisual, triggerOpenCartPanel } from "@/lib/cartEffects";
+import { withBasePath } from "@/lib/paths";
 
 interface WishlistItem {
   productId: number;
@@ -78,7 +79,7 @@ export default function Wishlist() {
               </div>
               <div className="relative overflow-hidden rounded-[1.35rem] bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(15,23,42,0.06))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.06),rgba(15,23,42,0.45))]">
                 <div className="absolute inset-x-10 bottom-3 h-8 rounded-full bg-black/15 blur-xl dark:bg-accent/10" />
-                <img src={item.image} alt={item.name} className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <img src={withBasePath(item.image)} alt={item.name} className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.32),transparent_45%),linear-gradient(to_top,rgba(15,23,42,0.25),transparent_40%)] opacity-80" />
               </div>
             </div>
