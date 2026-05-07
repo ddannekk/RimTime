@@ -39,6 +39,15 @@ export default function Products() {
     }
   }, [productsData]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const nextQuery = params.get("q") ?? "";
+    const nextSize = params.get("size");
+
+    setSearchQuery((current) => (current === nextQuery ? current : nextQuery));
+    setSelectedSize((current) => (current === nextSize ? current : nextSize));
+  }, [search]);
+
   const updateSearchInUrl = (nextValue: string) => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(search);
