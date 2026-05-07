@@ -150,7 +150,24 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function vitePluginGithubPagesSpaFallback(): Plugin {
+  return {
+    name: "github-pages-spa-fallback",
+    closeBundle() {
+      const outputDir = path.resolve(import.meta.dirname, "dist", "public");
+      const indexHtml = path.join(outputDir, "index.html");
+      const fallbackHtml = path.join(outputDir, "404.html");
+
+      if (!fs.existsSync(indexHtml)) {
+        return;
+      }
+
+      fs.copyFileSync(indexHtml, fallbackHtml);
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginGithubPagesSpaFallback()];
 
 export default defineConfig({
   base: "/RimTime/",

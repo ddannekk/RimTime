@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { createDemoTrpcLink } from "@/lib/demoTrpcLink";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
@@ -9,6 +10,9 @@ import { getLoginUrl } from "./const";
 import "./index.css";
 
 const queryClient = new QueryClient();
+const isStaticDemo =
+  import.meta.env.VITE_STATIC_DEMO === "true" ||
+  (typeof window !== "undefined" && /(^|\.)github\.io$/i.test(window.location.hostname));
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -38,18 +42,20 @@ queryClient.getMutationCache().subscribe(event => {
 });
 
 const trpcClient = trpc.createClient({
-  links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
-    }),
-  ],
+  links: isStaticDemo
+    ? [createDemoTrpcLink()]
+    : [
+        httpBatchLink({
+          url: "/api/trpc",
+          transformer: superjson,
+          fetch(input, init) {
+            return globalThis.fetch(input, {
+              ...(init ?? {}),
+              credentials: "include",
+            });
+          },
+        }),
+      ],
 });
 
 createRoot(document.getElementById("root")!).render(
